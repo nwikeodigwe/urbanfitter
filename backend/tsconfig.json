@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "baseUrl": "./src",
+    "typeRoots": ["./types", "./node_modules/@types"],
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
     /* Projects */
@@ -111,6 +113,19 @@
     "rootDir": "./src",
     "allowJs": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "src/routes/user.js",
+    "src/routes/user.js",
+    "src/custom.d.ts",
+    "src/middleware/auth.js",
+    "src/app.js",
+    "src/config/facebook.js",
+    "src/middleware/error.js",
+    "src/startup/routes.js",
+    "src/startup/prod.js",
+    "src/startup/logging.js"
+  ],
   "exclude": ["node_modules"]
 }
