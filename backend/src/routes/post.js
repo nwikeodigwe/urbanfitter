@@ -7,19 +7,27 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post("/", [auth], async (req, res) => {
-  const { title, content, categoryId } = req.body;
+  const { title, content } = req.body;
 
   if (!title || !content)
     return res.status(400).json({ error: "Title and content required" });
 
+  const postData = {
+    ...(title !== undefined && { title }),
+    ...(content !== undefined && { content }),
+  };
+
   const post = await prisma.post.create({
     data: {
-      title,
-      content,
-      published: false,
+      ...postData,
       category: {
         connect: {
-          id: req.body.categoryId,
+          id: req.body.category,
+        },
+      },
+      author: {
+        connect: {
+          id: req.user.id,
         },
       },
     },
@@ -37,8 +45,17 @@ router.get("/", [auth], async (req, res) => {
       id: true,
       title: true,
       content: true,
-      category: true,
-      published: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+        },
+      },
+      category: {
+        select: {
+          name: true,
+        },
+      },
       createdAt: true,
     },
   });
@@ -46,6 +63,28 @@ router.get("/", [auth], async (req, res) => {
   if (!posts) return res.status(404).json({ error: "Posts not found" });
 
   res.status(200).json({ posts });
+});
+
+router.post("/category", [auth], async (req, res) => {
+  const { name } = req.body;
+
+  if (!name) return res.status(400).json({ error: "Name required" });
+
+  const category = await prisma.category.create({
+    data: {
+      name,
+    },
+  });
+
+  res.status(201).json({ category });
+});
+
+router.get("/categories", [auth], async (req, res) => {
+  const category = await prisma.category.findMany();
+
+  if (!category) return res.status(404).json({ error: "Category not found" });
+
+  res.status(200).json({ category });
 });
 
 router.get("/me", [auth], async (req, res) => {
@@ -58,6 +97,11 @@ router.get("/me", [auth], async (req, res) => {
       title: true,
       content: true,
       published: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
       createdAt: true,
     },
   });
@@ -67,7 +111,7 @@ router.get("/me", [auth], async (req, res) => {
   res.status(200).json({ posts });
 });
 
-router.get("/:category", [auth], async (req, res) => {
+router.get("/category/:category", [auth], async (req, res) => {
   const posts = await prisma.post.findMany({
     where: {
       categoryId: req.params.category,
@@ -114,11 +158,13 @@ router.post("/:post/comment", [auth], async (req, res) => {
   const comment = await prisma.comment.create({
     data: {
       content,
-      connect: {
-        post: {
+      post: {
+        connect: {
           id: req.params.post,
         },
-        user: {
+      },
+      author: {
+        connect: {
           id: req.user.id,
         },
       },
@@ -145,7 +191,7 @@ router.post("/:post/comment/:comment", [auth], async (req, res) => {
   res.status(200).json({ comment });
 });
 
-router.get("/:post/commments/", [auth], async (req, res) => {
+router.get("/:post/commments", [auth], async (req, res) => {
   const posts = await prisma.post.findMany({
     where: {
       id: req.params.post,
@@ -177,7 +223,7 @@ router.patch("/:post", [auth], async (req, res) => {
   res.status(200).json({ post });
 });
 
-router.delete("/:comment", [auth], async (req, res) => {
+router.delete("/comment/:comment", [auth], async (req, res) => {
   const comment = await prisma.comment.delete({
     where: { id: req.params.comment, authorId: req.user.id },
   });
@@ -199,21 +245,26 @@ router.post("/:post/like", [auth], async (req, res) => {
 });
 
 router.delete("/:post/unlike", [auth], async (req, res) => {
-  const comment = await prisma.like.delete({
-    where: { postId: req.params.post, authorId: req.user.id },
+  const like = await prisma.like.delete({
+    where: {
+      userId_postId: {
+        userId: req.user.id,
+        postId: req.params.post,
+      },
+    },
   });
 
-  if (!comment) return res.status(404).json({ error: "Post not found" });
+  if (!like) return res.status(404).json({ error: "Post not found" });
 
-  res.status(200).json({ comment });
+  res.status(200).json({ like });
 });
 
 router.get("/:post/likes", [auth], async (req, res) => {
-  const like = await prisma.like.findMany({
+  const likes = await prisma.like.findMany({
     where: { postId: req.params.post },
   });
 
-  res.status(201).json({ like });
+  res.status(201).json({ likes });
 });
 
 router.patch("/:post/publish", [auth], async (req, res) => {

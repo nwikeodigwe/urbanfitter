@@ -4,6 +4,7 @@ const user = require("../routes/user");
 const post = require("../routes/post");
 const error = require("../middleware/error");
 const passport = require("passport");
+const path = require("path");
 const cors = require("cors");
 
 module.exports = (app) => {

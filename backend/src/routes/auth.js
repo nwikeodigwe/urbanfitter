@@ -3,7 +3,10 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 const rug = require("random-username-generator");
+const mail = require("../functions/mail");
+const mailconf = require("../config/mailconf");
 const bcrypt = require("bcryptjs");
+const _ = require("lodash");
 const router = express.Router();
 
 const prisma = new PrismaClient();
@@ -21,15 +24,18 @@ router.post("/signup", async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   password = await bcrypt.hash(password, salt);
 
-  const username = rug.generate(email.split("@")[0]);
+  const name = rug.generate(email.split("@")[0]);
 
   user = await prisma.user.create({
     data: {
-      username,
+      name,
       email,
       password,
     },
   });
+
+  user = _.pick(user, "name", "email");
+  result = await mail(user, mailconf.welcome);
 
   const token = jwt.sign(
     {
@@ -61,7 +67,7 @@ router.post("/signin", async (req, res) => {
   const token = jwt.sign(
     {
       id: user.id,
-      username: user.name,
+      name: user.name,
       email: user.email,
     },
     process.env.JWT_SECRET,

@@ -125,7 +125,8 @@
     "src/middleware/error.js",
     "src/startup/routes.js",
     "src/startup/prod.js",
-    "src/startup/logging.js"
+    "src/startup/logging.js",
+    "src/config/viewengine.js"
   ],
   "exclude": ["node_modules"]
 }

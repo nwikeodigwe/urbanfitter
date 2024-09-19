@@ -6,6 +6,46 @@ const router = express.Router();
 
 const prisma = new PrismaClient();
 
+router.get("/", [auth], async (req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      profile: {
+        select: {
+          firstname: true,
+          lastname: true,
+          bio: true,
+        },
+      },
+    },
+  });
+
+  if (!users) return res.status(404).send("User not found");
+
+  res.status(200).json(users);
+});
+
+router.get("/:user", [auth], async (req, res) => {
+  const user = await prisma.user.findFirst({
+    select: {
+      id: true,
+      name: true,
+      profile: {
+        select: {
+          firstname: true,
+          lastname: true,
+          bio: true,
+        },
+      },
+    },
+  });
+
+  if (!user) return res.status(404).send("User not found");
+
+  res.status(200).json(user);
+});
+
 router.get("/me", [auth], async (req, res) => {
   const user = await prisma.user.findFirstOrThrow({
     where: {
@@ -13,7 +53,7 @@ router.get("/me", [auth], async (req, res) => {
     },
     select: {
       id: true,
-      username: true,
+      name: true,
       email: true,
       profile: true,
     },
@@ -27,17 +67,17 @@ router.get("/me", [auth], async (req, res) => {
 router.patch("/me", [auth], async (req, res) => {
   if (!req.body) return res.status(400).send("No data provided");
 
-  const { username } = req.body;
+  const { name } = req.body;
 
   const user = await prisma.user.update({
     where: {
       id: req.user.id,
     },
     data: {
-      username,
+      name,
     },
     select: {
-      username: true,
+      name: true,
     },
   });
 
