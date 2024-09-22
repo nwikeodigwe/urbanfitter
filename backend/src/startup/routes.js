@@ -1,10 +1,11 @@
 const express = require("express");
 const auth = require("../routes/auth");
 const user = require("../routes/user");
-const post = require("../routes/post");
+const collection = require("../routes/collection");
+const style = require("../routes/style");
+const item = require("../routes/item");
 const error = require("../middleware/error");
 const passport = require("passport");
-const path = require("path");
 const cors = require("cors");
 
 module.exports = (app) => {
@@ -14,6 +15,8 @@ module.exports = (app) => {
   app.use(passport.initialize());
   app.use("/api/auth", auth);
   app.use("/api/user", user);
-  app.use("/api/post", post);
+  app.use("/api/collection", collection);
+  app.use("/api/style", style);
+  app.use("/api/item", item);
   app.use(error);
 };

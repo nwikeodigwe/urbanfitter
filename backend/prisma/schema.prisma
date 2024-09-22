@@ -14,18 +14,22 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String?   @unique
-  email     String    @unique
-  password  String
-  social    String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  profile   Profile?
-  posts     Post[]
-  resets    Reset[]
-  Like      Like[]
-  Comment   Comment[]
+  id                  String            @id @default(cuid())
+  name                String?           @unique
+  email               String            @unique
+  password            String
+  social              String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  profile             Profile?
+  resets              Reset[]
+  comments            Comment[]
+  authoredStyles      Style[]           @relation("UserAuthoredStyles")
+  likedStyles         LikedStyle[]
+  likedComments       LikedComment[]
+  likedItems          LikedItem[]
+  likedCollections    LikedCollection[]
+  authoredCollections Collection[]      @relation("UserAuthoredCollection")
 }
 
 model Reset {
@@ -49,52 +53,132 @@ model Profile {
   userId    String   @unique
 }
 
-model Post {
-  id         String    @id @default(cuid())
-  title      String
-  content    String
-  published  Boolean   @default(false)
-  author     User      @relation(fields: [authorId], references: [id])
-  authorId   String
-  category   Category? @relation(fields: [categoryId], references: [id])
-  categoryId String?
-  comment    Comment[]
-  like       Like[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+model Collection {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  author      User?             @relation("UserAuthoredCollection", fields: [authorId], references: [id])
+  authorId    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  styles      Style[]
+  likedBy     LikedCollection[]
 }
 
-model Category {
+model Style {
+  id           String       @id @default(cuid())
+  name         String
+  description  String
+  published    Boolean      @default(false)
+  author       User?        @relation("UserAuthoredStyles", fields: [authorId], references: [id])
+  authorId     String?
+  collection   Collection?  @relation(fields: [collectionId], references: [id])
+  collectionId String?
+  comments     Comment[]
+  likedBy      LikedStyle[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  items        StyleItem[]
+}
+
+model StyleItem {
   id        String   @id @default(cuid())
-  name      String
+  style     Style    @relation(fields: [styleId], references: [id], onDelete: Cascade)
+  styleId   String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  posts     Post[]
+
+  @@unique([styleId, itemId])
+}
+
+model Item {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  published   Boolean     @default(false)
+  likedBy     LikedItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  style       StyleItem[]
+  images      ItemImage[]
+}
+
+model ItemImage {
+  id        String   @id @default(cuid())
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId   String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  createdAt DateTime @default(now())
+
+  @@unique([itemId, imageId])
+}
+
+model Image {
+  id        String      @id @default(cuid())
+  url       String
+  createdAt DateTime    @default(now())
+  ItemImage ItemImage[]
 }
 
 model Comment {
-  id        String    @id @default(cuid())
+  id        String         @id @default(cuid())
   content   String
-  author    User      @relation(fields: [authorId], references: [id])
+  author    User           @relation(fields: [authorId], references: [id])
   authorId  String
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  styleId   String
+  parent    Comment?       @relation("CommentReplies", fields: [parentId], references: [id])
   parentId  String?
-  replies   Comment[] @relation("CommentReplies")
-  createdAt DateTime  @default(now())
+  replies   Comment[]      @relation("CommentReplies")
+  likedBy   LikedComment[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  Style     Style          @relation(fields: [styleId], references: [id])
 }
 
-model Like {
+model LikedStyle {
   id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
+  style     Style    @relation(fields: [styleId], references: [id], onDelete: Cascade)
+  styleId   String
+  createdAt DateTime @default(now())
 
-  @@unique([userId, postId])
+  @@unique([userId, styleId])
+}
+
+model LikedCollection {
+  id           String     @id @default(cuid())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  collectionId String
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, collectionId])
+}
+
+model LikedComment {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  Comment   Comment? @relation(fields: [commentId], references: [id])
+  commentId String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+}
+
+model LikedItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  Item      Item?    @relation(fields: [itemId], references: [id])
+  itemId    String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
 }
 
 enum status {
