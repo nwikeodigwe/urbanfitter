@@ -6,10 +6,21 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post("/", [auth], async (req, res) => {
-  const { name, description } = req.body;
+  let { name, description, tags } = req.body;
 
   if (!name || !description)
     return res.status(400).json({ error: "name and description is required" });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "tags must be an array" });
+
+  if (!!tags && tags.length > 0)
+    tags = tags.map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "")
+    );
 
   const collection = await prisma.collection.create({
     data: {
@@ -20,6 +31,25 @@ router.post("/", [auth], async (req, res) => {
           id: req.user.id,
         },
       },
+      ...(!!tags &&
+        tags.length > 0 && {
+          tags: {
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        }),
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      tags: { select: { name: true } },
+      author: {
+        select: { name: true },
+      },
+      createdAt: true,
     },
   });
 
@@ -32,6 +62,12 @@ router.get("/", [auth], async (req, res) => {
       id: true,
       name: true,
       description: true,
+      author: {
+        select: { name: true },
+      },
+      tags: {
+        select: { name: true },
+      },
       _count: {
         select: { likedBy: true },
       },
@@ -53,6 +89,12 @@ router.get("/:collection", [auth], async (req, res) => {
       id: true,
       name: true,
       description: true,
+      author: {
+        select: { name: true },
+      },
+      tags: {
+        select: { name: true },
+      },
       _count: {
         select: { likedBy: true },
       },
@@ -75,6 +117,9 @@ router.get("/:collection/styles", [auth], async (req, res) => {
       name: true,
       description: true,
       published: true,
+      tags: {
+        select: { name: true },
+      },
       _count: {
         select: { likedBy: true },
       },
@@ -114,11 +159,57 @@ router.delete("/:collection/unlike", [auth], async (req, res) => {
 });
 
 router.patch("/:collection", [auth], async (req, res) => {
-  const { name, description } = req.body;
+  let { name, description, tags } = req.body;
 
-  const collection = await prisma.collection.update({
+  if (!!tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "tags must be an array" });
+
+  if (!!tags && tags.length > 0)
+    tags = tags.map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "")
+    );
+
+  let collection = await prisma.collection.findFirst({
     where: { id: req.params.collection, authorId: req.user.id },
-    data: { name, description },
+    select: { id: true },
+  });
+
+  if (!collection)
+    return res.status(404).json({ error: "Collection not found" });
+
+  name = name.trim() || collection.name;
+  description = description.trim() || collection.description;
+  tags = tags || collection.tags || [];
+
+  collection = await prisma.collection.update({
+    where: { id: req.params.collection, authorId: req.user.id },
+    data: {
+      name,
+      description,
+      ...(!!tags &&
+        tags.length > 0 && {
+          tags: {
+            set: [],
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        }),
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      tags: { select: { name: true } },
+      author: {
+        select: { name: true },
+      },
+      updatedAt: true,
+    },
   });
 
   if (!collection)

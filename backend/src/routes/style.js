@@ -6,15 +6,10 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post("/", [auth], async (req, res) => {
-  let { name, description, collection } = req.body;
+  let { name, description, collection, tags } = req.body;
 
   if (!name || !description)
     return res.status(400).json({ error: "name and description is required" });
-
-  const styleData = {
-    ...(name !== undefined && { name }),
-    ...(description !== undefined && { description }),
-  };
 
   collection = await prisma.collection.findUnique({
     where: { id: collection },
@@ -24,9 +19,30 @@ router.post("/", [auth], async (req, res) => {
   if (!collection)
     return res.status(404).json({ error: "Collection not found" });
 
+  if (!!tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  if (!!tags && tags.length > 0)
+    tags = tags.map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "")
+    );
+
   const style = await prisma.style.create({
     data: {
-      ...styleData,
+      name: name || undefined,
+      description: description || undefined,
+      ...(!!tags &&
+        tags.length > 0 && {
+          tags: {
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        }),
       collection: {
         connect: {
           id: collection.id,
@@ -36,6 +52,20 @@ router.post("/", [auth], async (req, res) => {
         connect: {
           id: req.user.id,
         },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      tags: { select: { name: true } },
+      collection: {
+        select: {
+          name: true,
+        },
+      },
+      author: {
+        select: { name: true },
       },
     },
   });
@@ -58,6 +88,7 @@ router.get("/", [auth], async (req, res) => {
           name: true,
         },
       },
+      tags: { select: { name: true } },
       collection: {
         select: {
           name: true,
@@ -91,6 +122,7 @@ router.get("/:style", [auth], async (req, res) => {
         },
       },
       items: true,
+      tags: { select: { name: true } },
       collection: {
         select: {
           name: true,
@@ -121,6 +153,7 @@ router.get("/me", [auth], async (req, res) => {
       _count: {
         select: { likedBy: true },
       },
+      tags: { select: { name: true } },
       collection: {
         select: {
           name: true,
@@ -146,6 +179,7 @@ router.get(":style/user/:user", [auth], async (req, res) => {
       name: true,
       description: true,
       published: true,
+      tags: { select: { name: true } },
       _count: {
         select: { likedBy: true },
       },
@@ -159,13 +193,20 @@ router.get(":style/user/:user", [auth], async (req, res) => {
 });
 
 router.post("/:style/comment", [auth], async (req, res) => {
-  const { content } = req.body;
+  let { content, tags } = req.body;
 
   if (!content) return res.status(400).json({ error: "Comment required" });
 
   const style = await prisma.style.findUnique({
     where: { id: req.params.style },
   });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  tags = tags
+    .map((tag) => tag.trim().toLowerCase())
+    .replace(/[^a-zA-Z0-9]/g, "");
 
   if (!style) return res.status(404).json({ error: "Style not found" });
 
@@ -177,6 +218,15 @@ router.post("/:style/comment", [auth], async (req, res) => {
           id: req.params.style,
         },
       },
+      ...(tags.length > 0 && {
+        tags: {
+          set: [],
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      }),
       author: {
         connect: {
           id: req.user.id,
@@ -189,7 +239,7 @@ router.post("/:style/comment", [auth], async (req, res) => {
 });
 
 router.post("/:style/comment/:comment", [auth], async (req, res) => {
-  const { content } = req.body;
+  let { content, tags } = req.body;
 
   if (!content) return res.status(400).json({ error: "Content required" });
 
@@ -198,6 +248,13 @@ router.post("/:style/comment/:comment", [auth], async (req, res) => {
   });
 
   if (!style) return res.status(404).json({ error: "Style not found" });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  tags = tags
+    .map((tag) => tag.trim().toLowerCase())
+    .replace(/[^a-zA-Z0-9]/g, "");
 
   let comment = await prisma.comment.findUnique({
     where: { id: req.params.comment },
@@ -208,6 +265,15 @@ router.post("/:style/comment/:comment", [auth], async (req, res) => {
   comment = await prisma.comment.create({
     data: {
       content: content,
+      ...(tags.length > 0 && {
+        tags: {
+          set: [],
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      }),
       authorId: req.user.id,
       styleId: req.params.style,
       parentId: req.params.comment,
@@ -261,13 +327,20 @@ router.get("/:style/comments", [auth], async (req, res) => {
 });
 
 router.patch("/:style", [auth], async (req, res) => {
-  const { name, description, items } = req.body;
+  let { name, description, items, tags } = req.body;
 
   if (!name && !description)
-    return res.status(400).json({ error: "name and description is required" });
+    return res.status(400).json({ error: "Name and description is required" });
 
   if (items && !Array.isArray(items))
     return res.status(400).json({ error: "Items must be an array" });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  tags = tags
+    .map((tag) => tag.trim().toLowerCase())
+    .replace(/[^a-zA-Z0-9]/g, "");
 
   const style = await prisma.style.update({
     where: { id: req.params.style, authorId: req.user.id },
@@ -280,6 +353,14 @@ router.patch("/:style", [auth], async (req, res) => {
           items: { connect: { id: itemId } },
         })),
       },
+      ...(tags.length > 0 && {
+        tags: {
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      }),
     },
   });
 

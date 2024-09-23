@@ -1,6 +1,6 @@
 const passport = require("passport");
 const FacebookStrategy = require("passport-facebook").Strategy;
-const LocalStrategy = require("passport-local").Strategy;
+// const LocalStrategy = require("passport-local").Strategy;
 const { PrismaClient } = require("@prisma/client");
 const config = require("../config/facebook");
 const bcrypt = require("bcryptjs");
@@ -27,26 +27,26 @@ passport.use(
   })
 );
 
-passport.use(
-  new LocalStrategy(
-    { usernameField: "email", passwordField: "password", session: false },
-    async function (email, password, done) {
-      const user = await prisma.user.findUnique({
-        where: {
-          email,
-        },
-      });
+// passport.use(
+//   new LocalStrategy(
+//     { usernameField: "email", passwordField: "password", session: false },
+//     async function (email, password, done) {
+//       const user = await prisma.user.findUnique({
+//         where: {
+//           email,
+//         },
+//       });
 
-      if (!user) return done(null, false);
+//       if (!user) return done(null, false);
 
-      const passwordMatch = await bcrypt.compare(password, user.password);
+//       const passwordMatch = await bcrypt.compare(password, user.password);
 
-      if (!passwordMatch) return done(null, false);
+//       if (!passwordMatch) return done(null, false);
 
-      return done(null, user);
-    }
-  )
-);
+//       return done(null, user);
+//     }
+//   )
+// );
 
 passport.serializeUser((user, done) => {
   done(null, user);

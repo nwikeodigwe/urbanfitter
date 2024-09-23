@@ -6,7 +6,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post("/", [auth], async (req, res) => {
-  const { name, description, images } = req.body;
+  let { name, description, brand, images, creator, tags } = req.body;
 
   if (!name || !description)
     return res.status(400).json({ error: "Name and description is required" });
@@ -14,18 +14,70 @@ router.post("/", [auth], async (req, res) => {
   if (!Array.isArray(images) || images.length === 0)
     return res.status(400).json({ error: "At least one image is required" });
 
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  console.log(tags);
+  if (tags && tags.length > 0)
+    tags = tags.map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "")
+    );
+
+  if (!brand) return res.status(404).json({ error: "Brand is required" });
+
+  brand = brand
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]/g, "");
+
+  creator = await prisma.user.findFirst({
+    where: {
+      OR: [{ id: creator }, { name: creator }, { email: creator }],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  creator ? (creator = creator.id) : (creator = req.user.id);
+
   const item = await prisma.item.create({
     data: {
       name,
       description,
+      brand: {
+        connectOrCreate: {
+          where: { name: brand },
+          create: { name: brand },
+        },
+      },
       images: {
         create: images.map((imageId) => ({
           image: { connect: { id: imageId } },
         })),
       },
+      ...(tags &&
+        tags.length > 0 && {
+          tags: {
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        }),
+      creator: {
+        connect: {
+          id: creator,
+        },
+      },
     },
     include: {
-      images: true,
+      tags: { select: { name: true } },
+      images: { select: { image: { select: { url: true } } } },
+      brand: { select: { name: true } },
     },
   });
 
@@ -42,6 +94,9 @@ router.get("/", [auth], async (req, res) => {
       name: true,
       description: true,
       images: { select: { image: { select: { url: true } } } },
+      tags: { select: { name: true } },
+      brand: { select: { name: true } },
+      creator: { select: { name: true } },
       _count: {
         select: {
           likedBy: true,
@@ -66,6 +121,8 @@ router.get("/:item", [auth], async (req, res) => {
       name: true,
       description: true,
       images: { select: { image: { select: { url: true } } } },
+      tags: { select: { name: true } },
+      brand: { select: { name: true } },
       _count: {
         select: {
           likedBy: true,
@@ -87,13 +144,21 @@ router.get("/:item", [auth], async (req, res) => {
 });
 
 router.patch("/:item", [auth], async (req, res) => {
-  const { name, description, images } = req.body;
-
-  if (!name && !description)
-    return res.status(400).json({ error: "Name or description is required" });
+  let { name, description, images, tags, creator } = req.body;
 
   if (images && (!Array.isArray(images) || images.length === 0))
     return res.status(400).json({ error: "At least one image is required" });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  if (!!tags && tags.length > 0)
+    tags = tags.map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "")
+    );
 
   let item = await prisma.item.findUnique({
     where: {
@@ -103,9 +168,23 @@ router.patch("/:item", [auth], async (req, res) => {
 
   if (!item) return res.status(404).json({ error: "Item not found" });
 
+  if (creator) {
+    creator = await prisma.user.findFirst({
+      where: { OR: [{ id: creator }, { name: creator }, { email: creator }] },
+      select: { id: true },
+    });
+    creator = creator.id || undefined;
+  }
+
+  name = name || item.name;
+  description = description || item.description;
+  images = images || item.images.map((image) => image.id);
+  creator = creator || item.creatorId;
+
   item = await prisma.item.update({
     where: {
       id: req.params.item,
+      creator: { id: req.user.id },
     },
     data: {
       name,
@@ -116,9 +195,28 @@ router.patch("/:item", [auth], async (req, res) => {
           image: { connect: { id: imageId } },
         })),
       },
+      ...(!!tags &&
+        tags.length > 0 && {
+          tags: {
+            set: [],
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        }),
+      ...(creator && {
+        creator: {
+          connect: {
+            id: creator,
+          },
+        },
+      }),
     },
     include: {
-      images: true,
+      images: { select: { image: { select: { url: true } } } },
+      tags: { select: { name: true } },
+      brand: { select: { name: true } },
     },
   });
 
@@ -129,6 +227,7 @@ router.delete("/:item", [auth], async (req, res) => {
   const item = prisma.item.delete({
     where: {
       id: req.params.item,
+      creatorId: req.user.id,
     },
   });
 
