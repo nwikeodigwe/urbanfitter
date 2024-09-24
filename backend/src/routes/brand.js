@@ -407,6 +407,150 @@ router.delete("/:brand/unvote", [auth], async (req, res) => {
   res.status(204).end();
 });
 
+router.post("/:brand/comment", [auth], async (req, res) => {
+  let { content, tags } = req.body;
+
+  if (!content) return res.status(400).json({ error: "Comment required" });
+
+  const brand = await prisma.brand.findUnique({
+    where: { id: req.params.brand },
+  });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  tags = tags
+    .map((tag) => tag.trim().toLowerCase())
+    .replace(/[^a-zA-Z0-9]/g, "");
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const comment = await prisma.comment.create({
+    data: {
+      content,
+      brand: {
+        connect: {
+          id: req.params.brand,
+        },
+      },
+      ...(tags.length > 0 && {
+        tags: {
+          set: [],
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      }),
+      author: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+    },
+  });
+
+  res.status(201).json({ comment });
+});
+
+router.post("/:brand/comment/:comment", [auth], async (req, res) => {
+  let { content, tags } = req.body;
+
+  if (!content) return res.status(400).json({ error: "Content required" });
+
+  let brand = await prisma.brand.findUnique({
+    where: { id: req.params.brand },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  if (tags && !Array.isArray(tags))
+    return res.status(400).json({ error: "Tags must be an array" });
+
+  tags = tags
+    .map((tag) => tag.trim().toLowerCase())
+    .replace(/[^a-zA-Z0-9]/g, "");
+
+  let comment = await prisma.comment.findUnique({
+    where: { id: req.params.comment },
+  });
+
+  if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+  comment = await prisma.comment.create({
+    data: {
+      content: content,
+      ...(tags.length > 0 && {
+        tags: {
+          set: [],
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      }),
+      authorId: req.user.id,
+      brandId: req.params.brand,
+      parentId: req.params.comment,
+    },
+  });
+
+  res.status(200).json({ comment });
+});
+
+router.get("/:brand/comments", [auth], async (req, res) => {
+  const brands = await prisma.brand.findMany({
+    where: {
+      id: req.params.brand,
+    },
+    select: {
+      comments: {
+        select: {
+          id: true,
+          content: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              likedBy: true,
+            },
+          },
+          replies: {
+            select: {
+              id: true,
+              content: true,
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!brands) return res.status(404).json({ error: "No brand found" });
+
+  res.status(200).json({ brands });
+});
+
+router.delete("/comment/:comment", [auth], async (req, res) => {
+  const comment = await prisma.comment.delete({
+    where: { id: req.params.comment, authorId: req.user.id },
+  });
+
+  if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+  res.status(204).end();
+});
+
 router.delete("/:brand", [auth], async (req, res) => {
   let brand = await prisma.brand.findFirst({
     where: {

@@ -111,7 +111,6 @@ model Style {
   authorId     String?
   collection   Collection?     @relation(fields: [collectionId], references: [id])
   collectionId String?
-  comments     Comment[]
   favoritedBy  FavoriteStyle[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -160,15 +159,15 @@ model Comment {
   content     String
   author      User          @relation(fields: [authorId], references: [id])
   authorId    String
+  entity      Entity
+  entityId    String
   parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
   parentId    String?
   replies     Comment[]     @relation("CommentReplies")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  Style       Style         @relation(fields: [styleId], references: [id])
-  styleId     String
   tag         Tag[]         @relation("CommentTags")
   CommentVote CommentVote[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model FavoriteBrand {
@@ -273,6 +272,14 @@ model CommentVote {
   createdAt DateTime @default(now())
 
   @@unique([userId, commentId])
+}
+
+enum Entity {
+  STYLE
+  ITEM
+  COMMENT
+  BRAND
+  COLLECTION
 }
 
 enum status {
