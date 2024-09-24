@@ -143,6 +143,163 @@ router.get("/:item", [auth], async (req, res) => {
   res.status(200).json({ item });
 });
 
+router.post("/:item/favorite", [auth], async (req, res) => {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: req.params.item,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!item) return res.status(404).json({ error: "item not found" });
+
+  const favorite = await prisma.favoriteItem.upsert({
+    where: {
+      userId_itemId: {
+        userId: req.user.id,
+        itemId: item.id,
+      },
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      item: {
+        connect: {
+          id: req.params.item,
+        },
+      },
+    },
+    update: {},
+    select: {
+      id: true,
+    },
+  });
+
+  res.status(201).json({ favorite });
+});
+
+router.delete("/:item/unfavorite", [auth], async (req, res) => {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: req.params.item,
+    },
+  });
+
+  if (!item) return res.status(404).json({ error: "item not found" });
+
+  let favorite = await prisma.favoriteItem.findFirst({
+    where: {
+      userId: req.user.id,
+      itemId: item.id,
+    },
+  });
+
+  if (!favorite)
+    return res.status(404).json({ error: "item is not favorited" });
+
+  await prisma.favoriteItem.delete({
+    where: {
+      userId_itemId: {
+        userId: favorite.userId,
+        itemId: favorite.itemId,
+      },
+    },
+  });
+
+  res.status(204).end();
+});
+
+router.put("/:item/upvote", [auth], async (req, res) => {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: req.params.item,
+    },
+  });
+
+  if (!item) return res.status(404).json({ error: "Item not found" });
+
+  const upvote = await prisma.itemVote.upsert({
+    where: {
+      userId_itemId: { itemId: req.params.item, userId: req.user.id },
+    },
+    update: {
+      vote: 1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      item: {
+        connect: {
+          id: req.params.item,
+        },
+      },
+      vote: 1,
+    },
+  });
+
+  res.status(200).json({ upvote });
+});
+
+router.put("/:item/downvote", [auth], async (req, res) => {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: req.params.item,
+    },
+  });
+
+  if (!item) return res.status(404).json({ error: "Item not found" });
+
+  const downvote = await prisma.itemVote.upsert({
+    where: {
+      userId_itemId: { itemId: req.params.item, userId: req.user.id },
+    },
+    update: {
+      vote: -1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      item: {
+        connect: {
+          id: req.params.item,
+        },
+      },
+      vote: -1,
+    },
+  });
+
+  res.status(200).json({ downvote });
+});
+
+router.delete("/:item/unvote", [auth], async (req, res) => {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: req.params.item,
+    },
+  });
+
+  if (!item) return res.status(404).json({ error: "Item not found" });
+
+  await prisma.itemVote.delete({
+    where: {
+      userId_itemId: { itemId: req.params.item, userId: req.user.id },
+    },
+  });
+
+  res.status(204).end();
+});
+
 router.patch("/:item", [auth], async (req, res) => {
   let { name, description, images, tags, creator } = req.body;
 

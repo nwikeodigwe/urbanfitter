@@ -91,9 +91,6 @@ router.post("/", [auth], async (req, res) => {
       logo: { select: { image: { select: { url: true } } } },
       owner: { select: { name: true } },
       tags: { select: { name: true } },
-      _count: {
-        select: { items: true },
-      },
     },
   });
 
@@ -242,6 +239,172 @@ router.patch("/:brand", [auth], async (req, res) => {
   });
 
   res.status(200).json({ brand });
+});
+
+router.post("/:brand/favorite", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      id: req.params.brand,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const favorite = await prisma.favoritebrand.upsert({
+    where: {
+      userId_brandId: {
+        userId: req.user.id,
+        brandId: brand.id,
+      },
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      brand: {
+        connect: {
+          id: req.params.brand,
+        },
+      },
+    },
+    update: {},
+    select: {
+      id: true,
+    },
+  });
+
+  res.status(201).json({ favorite });
+});
+
+router.delete("/:brand/unfavorite", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      id: req.params.brand,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  let favorite = await prisma.favoritebrand.findFirst({
+    where: {
+      userId: req.user.id,
+      brandId: brand.id,
+    },
+  });
+
+  if (!favorite)
+    return res.status(404).json({ error: "brand is not favorited" });
+
+  await prisma.favoritebrand.delete({
+    where: {
+      userId_brandId: {
+        userId: favorite.userId,
+        brandId: favorite.brandId,
+      },
+    },
+  });
+
+  res.status(204).end();
+});
+
+router.put("/:brand/upvote", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      id: req.params.brand,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const upvote = await prisma.brandVote.upsert({
+    where: {
+      userId_brandId: { brandId: req.params.brand, userId: req.user.id },
+    },
+    update: {
+      vote: 1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      brand: {
+        connect: {
+          id: req.params.brand,
+        },
+      },
+      vote: 1,
+    },
+  });
+
+  res.status(200).json({ upvote });
+});
+
+router.put("/:brand/downvote", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      id: req.params.brand,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const downvote = await prisma.brandVote.upsert({
+    where: {
+      userId_brandId: { brandId: req.params.brand, userId: req.user.id },
+    },
+    update: {
+      vote: -1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      brand: {
+        connect: {
+          id: req.params.brand,
+        },
+      },
+      vote: -1,
+    },
+  });
+
+  res.status(200).json({ downvote });
+});
+
+router.delete("/:brand/unvote", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      id: req.params.brand,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const vote = await prisma.brandVote.findFirst({
+    where: {
+      brandId: req.params.brand,
+      userId: req.user.id,
+    },
+  });
+
+  if (!vote) return res.status(404).json({ error: "brand not voted" });
+
+  await prisma.brandVote.delete({
+    where: {
+      userId_brandId: { brandId: req.params.brand, userId: req.user.id },
+    },
+  });
+
+  res.status(204).end();
 });
 
 router.delete("/:brand", [auth], async (req, res) => {

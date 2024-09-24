@@ -379,28 +379,177 @@ router.delete("/comment/:comment", [auth], async (req, res) => {
   res.status(204).end();
 });
 
-router.post("/:style/like", [auth], async (req, res) => {
-  const like = await prisma.likedStyle.create({
-    data: {
-      style: { connect: { id: req.params.style } },
-      user: { connect: { id: req.user.id } },
+router.post("/:style/favorite", [auth], async (req, res) => {
+  const style = await prisma.style.findFirst({
+    where: {
+      id: req.params.style,
+    },
+    select: {
+      id: true,
     },
   });
 
-  res.status(201).json({ like });
-});
+  if (!style) return res.status(404).json({ error: "Style not found" });
 
-router.delete("/:style/unlike", [auth], async (req, res) => {
-  const like = await prisma.likedStyle.delete({
+  const favorite = await prisma.favoriteStyle.upsert({
     where: {
       userId_styleId: {
         userId: req.user.id,
-        styleId: req.params.style,
+        styleId: style.id,
+      },
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      style: {
+        connect: {
+          id: req.params.style,
+        },
+      },
+    },
+    update: {},
+    select: {
+      id: true,
+    },
+  });
+
+  res.status(201).json({ favorite });
+});
+
+router.delete("/:style/unfavorite", [auth], async (req, res) => {
+  const style = await prisma.style.findFirst({
+    where: {
+      id: req.params.style,
+    },
+  });
+
+  if (!style) return res.status(404).json({ error: "Style not found" });
+
+  let favorite = await prisma.favoriteStyle.findFirst({
+    where: {
+      userId: req.user.id,
+      styleId: style.id,
+    },
+  });
+
+  if (!favorite)
+    return res.status(404).json({ error: "Style is not favorited" });
+
+  await prisma.favoriteStyle.delete({
+    where: {
+      userId_styleId: {
+        userId: favorite.userId,
+        styleId: favorite.styleId,
       },
     },
   });
 
-  if (!like) return res.status(404).json({ error: "Like not found" });
+  res.status(204).end();
+});
+
+router.put("/:style/upvote", [auth], async (req, res) => {
+  const style = await prisma.style.findFirst({
+    where: {
+      id: req.params.style,
+    },
+  });
+
+  if (!style) return res.status(404).json({ error: "Style not found" });
+
+  const upvote = await prisma.styleVote.upsert({
+    where: {
+      userId_styleId: {
+        styleId: req.params.style,
+        userId: req.user.id,
+      },
+    },
+    update: {
+      vote: 1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      style: {
+        connect: {
+          id: req.params.style,
+        },
+      },
+      vote: 1,
+    },
+  });
+
+  res.status(200).json({ upvote });
+});
+
+router.put("/:style/downvote", [auth], async (req, res) => {
+  const style = await prisma.style.findFirst({
+    where: {
+      id: req.params.style,
+    },
+  });
+
+  if (!style) return res.status(404).json({ error: "Style not found" });
+
+  const downvote = await prisma.styleVote.upsert({
+    where: {
+      userId_styleId: {
+        styleId: req.params.style,
+        userId: req.user.id,
+      },
+    },
+    update: {
+      vote: -1,
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      style: {
+        connect: {
+          id: req.params.style,
+        },
+      },
+      vote: -1,
+    },
+  });
+
+  res.status(200).json({ downvote });
+});
+
+router.delete("/:style/unvote", [auth], async (req, res) => {
+  const style = await prisma.style.findFirst({
+    where: {
+      id: req.params.style,
+    },
+  });
+
+  if (!style) return res.status(404).json({ error: "Style not found" });
+
+  const vote = await prisma.styleVote.findFirst({
+    where: {
+      styleId: style.id,
+      userId: req.user.id,
+    },
+  });
+
+  if (!vote) return res.status(404).json({ error: "Vote not found" });
+
+  await prisma.styleVote.delete({
+    where: {
+      userId_styleId: {
+        styleId: style.id,
+        userId: req.user.id,
+      },
+    },
+  });
 
   res.status(204).end();
 });
