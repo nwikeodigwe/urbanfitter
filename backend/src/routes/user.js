@@ -60,7 +60,7 @@ router.post("/:user/subscribe", [auth], async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).send("User not found");
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   let subscription = await prisma.userSubscription.findFirst({
     where: {
@@ -69,7 +69,8 @@ router.post("/:user/subscribe", [auth], async (req, res) => {
     },
   });
 
-  if (subscription) return res.status(400).send("Already subscribed");
+  if (subscription)
+    return res.status(400).json({ error: "Already subscribed" });
   console.log(req.user.id, user.id);
 
   subscription = await prisma.userSubscription.create({
@@ -107,7 +108,7 @@ router.delete("/:user/unsubscribe", [auth], async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).send("User not found");
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   const subscription = await prisma.userSubscription.findFirst({
     where: {
@@ -116,7 +117,7 @@ router.delete("/:user/unsubscribe", [auth], async (req, res) => {
     },
   });
 
-  if (!subscription) return res.status(400).send("Not subscribed");
+  if (!subscription) return res.status(400).json({ error: "Not subscribed" });
 
   await prisma.userSubscription.delete({
     where: {

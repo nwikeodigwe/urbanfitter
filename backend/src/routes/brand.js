@@ -407,6 +407,79 @@ router.delete("/:brand/unvote", [auth], async (req, res) => {
   res.status(204).end();
 });
 
+router.post("/:brand/subscribe", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      OR: [{ id: req.params.brand }, { name: req.params.brand }],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  let subscription = await prisma.brandSubscription.findFirst({
+    where: {
+      brandId: brand.id,
+      userId: req.user.id,
+    },
+  });
+
+  if (subscription)
+    return res.status(400).json({ error: "Already subscribed" });
+
+  subscription = await prisma.brandSubscription.create({
+    data: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      brand: {
+        connect: {
+          id: brand.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  res.status(201).json({ subscription });
+});
+
+router.delete("/:brand/unsubscribe", [auth], async (req, res) => {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      OR: [{ id: req.params.brand }, { name: req.params.brand }],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  const subscription = await prisma.brandSubscription.findFirst({
+    where: {
+      brandId: brand.id,
+      userId: req.user.id,
+    },
+  });
+
+  if (!subscription) return res.status(400).json({ error: "Not subscribed" });
+
+  await prisma.brandSubscription.delete({
+    where: {
+      id: subscription.id,
+    },
+  });
+
+  res.status(200).end();
+});
+
 router.post("/:brand/comment", [auth], async (req, res) => {
   let { content, tags } = req.body;
 

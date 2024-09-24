@@ -6,7 +6,8 @@ module.exports = (req, res, next) => {
   if (!token) return res.status(401).send("Access denied");
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).send("Invalid token");
+    if (err)
+      return res.status(403).json({ error: "Invalid authorization token" });
     req.user = user;
     next();
   });

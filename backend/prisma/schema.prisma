@@ -39,6 +39,7 @@ model User {
   favoriteItem        favoriteItem[]
   subscriptions       UserSubscription[]   @relation("Subscribers")
   subscribers         UserSubscription[]   @relation("SubscribedTo")
+  BrandSubscription   BrandSubscription[]
 }
 
 model Profile {
@@ -86,19 +87,31 @@ model Tag {
 }
 
 model Brand {
-  id          String          @id @default(cuid())
-  name        String          @unique
-  description String?
-  logo        Logo?           @relation(fields: [logoId], references: [id])
-  logoId      String?         @unique
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  items       Item[]
-  owner       User?           @relation(fields: [ownerId], references: [id])
-  ownerId     String?
-  tags        Tag[]           @relation("BrandTags")
-  favoritedBy FavoriteBrand[]
-  BrandVote   BrandVote[]
+  id                String              @id @default(cuid())
+  name              String              @unique
+  description       String?
+  logo              Logo?               @relation(fields: [logoId], references: [id])
+  logoId            String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  items             Item[]
+  owner             User?               @relation(fields: [ownerId], references: [id])
+  ownerId           String?
+  tags              Tag[]               @relation("BrandTags")
+  favoritedBy       FavoriteBrand[]
+  BrandVote         BrandVote[]
+  BrandSubscription BrandSubscription[]
+}
+
+model BrandSubscription {
+  id        String   @id @default(cuid())
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  brandId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([brandId, userId])
 }
 
 model Collection {
