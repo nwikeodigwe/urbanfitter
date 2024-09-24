@@ -37,6 +37,8 @@ model User {
   CommentVote         CommentVote[]
   BrandVote           BrandVote[]
   favoriteItem        favoriteItem[]
+  subscriptions       UserSubscription[]   @relation("Subscribers")
+  subscribers         UserSubscription[]   @relation("SubscribedTo")
 }
 
 model Profile {
@@ -48,6 +50,17 @@ model Profile {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique
+}
+
+model UserSubscription {
+  id           String   @id @default(cuid())
+  user         User     @relation("SubscribedTo", fields: [userId], references: [id])
+  userId       String
+  subscriber   User     @relation("Subscribers", fields: [subscriberId], references: [id])
+  subscriberId String
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, subscriberId])
 }
 
 model Reset {

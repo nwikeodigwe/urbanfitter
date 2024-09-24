@@ -46,6 +46,87 @@ router.get("/:user", [auth], async (req, res) => {
   res.status(200).json(user);
 });
 
+router.post("/:user/subscribe", [auth], async (req, res) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: req.params.user },
+        { name: req.params.user },
+        { email: req.params.user },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) return res.status(404).send("User not found");
+
+  let subscription = await prisma.userSubscription.findFirst({
+    where: {
+      userId: user.id,
+      subscriberId: req.user.id,
+    },
+  });
+
+  if (subscription) return res.status(400).send("Already subscribed");
+  console.log(req.user.id, user.id);
+
+  subscription = await prisma.userSubscription.create({
+    data: {
+      subscriber: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      user: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  res.status(201).json({ subscription });
+});
+
+router.delete("/:user/unsubscribe", [auth], async (req, res) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: req.params.user },
+        { name: req.params.user },
+        { email: req.params.user },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) return res.status(404).send("User not found");
+
+  const subscription = await prisma.userSubscription.findFirst({
+    where: {
+      userId: user.id,
+      subscriberId: req.user.id,
+    },
+  });
+
+  if (!subscription) return res.status(400).send("Not subscribed");
+
+  await prisma.userSubscription.delete({
+    where: {
+      id: subscription.id,
+    },
+  });
+
+  res.status(200).end();
+});
+
 router.get("/me", [auth], async (req, res) => {
   const user = await prisma.user.findFirstOrThrow({
     where: {

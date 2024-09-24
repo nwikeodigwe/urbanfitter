@@ -34,7 +34,7 @@ router.post("/signup", async (req, res) => {
     },
   });
 
-  user = _.pick(user, "name", "email");
+  user = _.pick(user, "id", "name", "email");
   result = await mail(user, mailconf.welcome);
 
   const token = jwt.sign(
