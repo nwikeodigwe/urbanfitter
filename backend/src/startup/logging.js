@@ -1,7 +1,7 @@
 require("express-async-errors");
 const winston = require("winston");
 
-module.exports = winston.createLogger({
+logger = winston.createLogger({
   level: "info",
   format: winston.format.json(),
   transports: [
@@ -20,4 +20,6 @@ function initializeLogging() {
     process.exit(1);
   });
 }
+
+module.exports = { logger, initializeLogging };
 initializeLogging();

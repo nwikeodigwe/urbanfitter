@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const logger = require("./startup/logging");
+const { logger } = require("./startup/logging");
 const app = express();
 
 require("./auth/passport");
