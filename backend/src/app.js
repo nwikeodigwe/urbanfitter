@@ -7,8 +7,11 @@ require("./auth/passport");
 require("./startup/routes")(app);
 require("./startup/prod")(app);
 
-const port = process.env.PORT || 8000;
+module.exports = app;
 
-module.exports = app.listen(port, () => {
-  logger.info(`Listening on port ${port}...`);
-});
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    logger.info(`Listening on port ${port}...`);
+  });
+}

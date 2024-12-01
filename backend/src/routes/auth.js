@@ -52,6 +52,10 @@ router.post("/signup", async (req, res) => {
 
 router.post("/signin", async (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ error: "Email and password required" });
+
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -109,10 +113,10 @@ router.post("/reset", async (req, res) => {
     select: { id: true },
   });
 
-  if (!user) return res.status(400).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   await prisma.reset.updateMany({
-    where: { userId: user.id, expires: { lte: new Date() } },
+    where: { user: { id: user.id }, expires: { lte: new Date() } },
     data: { expires: new Date() },
   });
 

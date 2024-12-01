@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 
 router.get("/", [auth], async (req, res) => {
   const users = await prisma.user.findMany({
+    where: { id: { not: req.user.id } },
     select: {
       id: true,
       name: true,
@@ -21,29 +22,9 @@ router.get("/", [auth], async (req, res) => {
     },
   });
 
-  if (!users) return res.status(404).send("User not found");
+  if (!users.length) return res.status(404).json({ error: "No user found" });
 
   res.status(200).json(users);
-});
-
-router.get("/:user", [auth], async (req, res) => {
-  const user = await prisma.user.findFirst({
-    select: {
-      id: true,
-      name: true,
-      profile: {
-        select: {
-          firstname: true,
-          lastname: true,
-          bio: true,
-        },
-      },
-    },
-  });
-
-  if (!user) return res.status(404).send("User not found");
-
-  res.status(200).json(user);
 });
 
 router.post("/:user/subscribe", [auth], async (req, res) => {
@@ -71,7 +52,6 @@ router.post("/:user/subscribe", [auth], async (req, res) => {
 
   if (subscription)
     return res.status(400).json({ error: "Already subscribed" });
-  console.log(req.user.id, user.id);
 
   subscription = await prisma.userSubscription.create({
     data: {
@@ -141,15 +121,11 @@ router.get("/me", [auth], async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).send("User not found");
-
   res.status(200).json(user);
 });
 
 router.patch("/me", [auth], async (req, res) => {
-  if (!req.body) return res.status(400).send("No data provided");
-
-  const { name } = req.body;
+  const { name, email } = req.body;
 
   const user = await prisma.user.update({
     where: {
@@ -157,23 +133,19 @@ router.patch("/me", [auth], async (req, res) => {
     },
     data: {
       name,
+      email,
     },
     select: {
       name: true,
+      email: true,
     },
   });
 
-  res.status(200).json({ user });
+  res.status(200).json(user);
 });
 
 router.patch("/profile", [auth], async (req, res) => {
-  if (!req.body) return res.status(400).send("No data provided");
-
   const { firstname, lastname, bio } = req.body;
-
-  let profile = await prisma.profile.findUnique({
-    where: { userId: req.user.id },
-  });
 
   const profileData = {
     ...(firstname !== undefined && { firstname }),
@@ -181,36 +153,22 @@ router.patch("/profile", [auth], async (req, res) => {
     ...(bio !== undefined && { bio }),
   };
 
-  if (!profile) {
-    profile = await prisma.profile.create({
-      data: {
-        ...profileData,
-        user: {
-          connect: {
-            id: req.user.id,
-          },
-        },
-      },
-    });
-
-    return res.status(201).json({ profile });
-  }
-
-  profile = await prisma.profile.update({
-    where: {
-      userId: req.user.id,
+  const profile = await prisma.profile.upsert({
+    where: { userId: req.user.id },
+    update: { ...profileData },
+    create: { ...profileData, user: { connect: { id: req.user.id } } },
+    select: {
+      firstname: true,
+      lastname: true,
+      bio: true,
     },
-    data: profileData,
   });
 
-  res.status(200).json({ profile });
+  return res.status(200).json(profile);
 });
 
 router.patch("/password", [auth], async (req, res) => {
   const { password, newpassword } = req.body;
-
-  if (!password || !newpassword)
-    return res.status(400).send("Password required");
 
   const user = await prisma.user.findUnique({
     where: {
@@ -238,6 +196,33 @@ router.patch("/password", [auth], async (req, res) => {
   });
 
   res.status(200).send("Password updated");
+});
+
+router.get("/:user", [auth], async (req, res) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: req.params.user },
+        { name: req.params.user },
+        { email: req.params.user },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      profile: {
+        select: {
+          firstname: true,
+          lastname: true,
+          bio: true,
+        },
+      },
+    },
+  });
+
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  res.status(200).json(user);
 });
 
 module.exports = router;

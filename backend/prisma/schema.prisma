@@ -49,15 +49,15 @@ model Profile {
   bio       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String   @unique
 }
 
 model UserSubscription {
   id           String   @id @default(cuid())
-  user         User     @relation("SubscribedTo", fields: [userId], references: [id])
+  user         User     @relation("SubscribedTo", fields: [userId], references: [id], onDelete: Cascade)
   userId       String
-  subscriber   User     @relation("Subscribers", fields: [subscriberId], references: [id])
+  subscriber   User     @relation("Subscribers", fields: [subscriberId], references: [id], onDelete: Cascade)
   subscriberId String
   createdAt    DateTime @default(now())
 
@@ -70,7 +70,7 @@ model Reset {
   expires   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
 }
 
@@ -95,7 +95,7 @@ model Brand {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   items             Item[]
-  owner             User?               @relation(fields: [ownerId], references: [id])
+  owner             User?               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId           String?
   tags              Tag[]               @relation("BrandTags")
   favoritedBy       FavoriteBrand[]
@@ -105,9 +105,9 @@ model Brand {
 
 model BrandSubscription {
   id        String   @id @default(cuid())
-  brand     Brand    @relation(fields: [brandId], references: [id])
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   brandId   String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   createdAt DateTime @default(now())
 
@@ -118,7 +118,7 @@ model Collection {
   id             String               @id @default(cuid())
   name           String
   description    String?
-  author         User?                @relation("UserAuthoredCollection", fields: [authorId], references: [id])
+  author         User?                @relation("UserAuthoredCollection", fields: [authorId], references: [id], onDelete: Cascade)
   authorId       String?
   styles         Style[]
   favoritedBy    FavoriteCollection[]
@@ -133,7 +133,7 @@ model Style {
   name         String
   description  String
   published    Boolean         @default(false)
-  author       User?           @relation("UserAuthoredStyles", fields: [authorId], references: [id])
+  author       User?           @relation("UserAuthoredStyles", fields: [authorId], references: [id], onDelete: Cascade)
   authorId     String?
   collection   Collection?     @relation(fields: [collectionId], references: [id])
   collectionId String?
@@ -153,7 +153,7 @@ model Item {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   styles       Style[]        @relation("StyleItem")
-  brand        Brand          @relation(fields: [brandId], references: [id])
+  brand        Brand?         @relation(fields: [brandId], references: [id])
   brandId      String
   creator      User?          @relation(fields: [creatorId], references: [id])
   creatorId    String?
@@ -183,7 +183,7 @@ model Image {
 model Comment {
   id          String        @id @default(cuid())
   content     String
-  author      User          @relation(fields: [authorId], references: [id])
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
   entity      Entity
   entityId    String
