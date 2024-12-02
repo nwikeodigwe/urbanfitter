@@ -8,14 +8,14 @@ const prisma = new PrismaClient();
 router.post("/", [auth], async (req, res) => {
   let { name, logo, owner, tags } = req.body;
 
+  if (!name) return res.status(400).json({ error: "Name is required" });
+
   name = name
     .trim()
     .toLowerCase()
     .replace(/[^a-zA-Z0-9 &]/g, "");
 
   if (owner) owner = owner.trim().toLowerCase();
-
-  if (!name) return res.status(400).json({ error: "Name is required" });
 
   if (tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
@@ -36,7 +36,7 @@ router.post("/", [auth], async (req, res) => {
 
   if (logo)
     return res
-      .status(404)
+      .status(400)
       .json({ error: "No two brands can have the same logo" });
 
   logo = req.body.logo || undefined;
