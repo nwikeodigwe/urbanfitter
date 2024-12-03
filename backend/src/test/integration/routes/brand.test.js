@@ -58,10 +58,11 @@ describe("Brand route", () => {
       email: "test@email.com",
       password: "password",
     };
+    const logo = await createLogo();
     brand = {
       name: "name",
       owner: user.email,
-      logo: "2be9de0f-41cb-4c49-9719-2256a8042f566",
+      logo: logo,
       description: "This is  a very stylish streatware brand",
       tags: ["Luxury", "Classy"],
     };
@@ -71,6 +72,7 @@ describe("Brand route", () => {
 
   afterEach(async () => {
     await prisma.user.deleteMany();
+    await prisma.brand.deleteMany();
     await prisma.$disconnect();
     await server.close();
   });
@@ -108,7 +110,7 @@ describe("Brand route", () => {
 
     it("should return 400 if brand already exists", async () => {
       await createBrand();
-      brand.logo = "2be9de0f-41cb-4c49-9719-2256a8042f577";
+      brand.logo = await createLogo();
       const res = await request(server)
         .post("/api/brand")
         .set(header)
@@ -125,6 +127,21 @@ describe("Brand route", () => {
         .send(brand);
 
       expect(res.status).toBe(201);
+    });
+  });
+
+  describe("GET /", () => {
+    it("Should return 400 if no brand found", async () => {
+      const res = await request(server).get("/api/brand").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if no brand found", async () => {
+      await createBrand();
+      const res = await request(server).get("/api/brand").set(header);
+
+      expect(res.status).toBe(200);
     });
   });
 });

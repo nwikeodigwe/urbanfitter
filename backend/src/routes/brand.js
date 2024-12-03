@@ -112,7 +112,8 @@ router.get("/", [auth], async (req, res) => {
     },
   });
 
-  if (!brands) return res.status(404).json({ error: "No brand found" });
+  if (brands.length == 0)
+    return res.status(404).json({ error: "No brand found" });
 
   res.status(200).json({ brands });
 });
