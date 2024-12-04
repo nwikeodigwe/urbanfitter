@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 describe("Brand route", () => {
   let user;
   let brand;
+  let comment;
   const auth = async () => {
     const res = await request(server).post("/api/auth/signup").send(user);
     return res.body.token;
@@ -93,6 +94,10 @@ describe("Brand route", () => {
       logo: logo,
       description: "This is  a very stylish streatware brand",
       tags: ["Luxury", "Classy"],
+    };
+    comment = {
+      content: "comment",
+      tags: ["tag1", "tag2"],
     };
     token = await auth();
     header = { authorization: `Bearer ${token}` };
@@ -374,6 +379,15 @@ describe("Brand route", () => {
       expect(res.status).toBe(404);
     });
 
+    it("Should return 400 if brand not subscribed", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}/unsubscribe`)
+        .set(header);
+
+      expect(res.status).toBe(400);
+    });
+
     it("Should return 200 if subscribed to brand", async () => {
       const brnd = await createBrand();
       await subscribeBrand();
@@ -382,6 +396,39 @@ describe("Brand route", () => {
         .set(header);
 
       expect(res.status).toBe(200);
+    });
+  });
+
+  describe("POST /:brand/comment", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .post("/api/brand/brandId/comment")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 400 if comment not provided", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment`)
+        .set(header);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("Should return 201 if comment successful", async () => {
+      const brnd = await createBrand();
+      console.log(comment);
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment`)
+        .set(header)
+        .send({
+          content: "comment",
+          tags: ["tag1", "tag2"],
+        });
+
+      expect(res.status).toBe(201);
     });
   });
 });

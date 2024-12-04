@@ -471,32 +471,32 @@ router.delete("/:brand/unsubscribe", [auth], async (req, res) => {
 router.post("/:brand/comment", [auth], async (req, res) => {
   let { content, tags } = req.body;
 
-  if (!content) return res.status(400).json({ error: "Comment required" });
-
   const brand = await prisma.brand.findUnique({
     where: { id: req.params.brand },
   });
 
+  if (!brand) return res.status(404).json({ error: "brand not found" });
+
+  if (!content || content == null)
+    return res.status(400).json({ error: "Comment required" });
+
   if (tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
 
-  tags = tags
-    .map((tag) => tag.trim().toLowerCase())
-    .replace(/[^a-zA-Z0-9]/g, "");
+  tags = tags.map((tag) =>
+    tag
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9]/g, "")
+  );
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  let entity = "BRAND";
 
   const comment = await prisma.comment.create({
     data: {
       content,
-      brand: {
-        connect: {
-          id: req.params.brand,
-        },
-      },
       ...(tags.length > 0 && {
-        tags: {
-          set: [],
+        tag: {
           connectOrCreate: tags.map((tag) => ({
             where: { name: tag },
             create: { name: tag },
@@ -508,6 +508,8 @@ router.post("/:brand/comment", [auth], async (req, res) => {
           id: req.user.id,
         },
       },
+      entity,
+      entityId: req.params.brand,
     },
   });
 
