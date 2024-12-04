@@ -153,10 +153,50 @@ describe("Brand route", () => {
     });
 
     it("Should return 200 if brand is found", async () => {
-      const brand = await createBrand();
+      brand = await createBrand();
       const res = await request(server)
         .get(`/api/brand/${brand.id}`)
         .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("PATCH /:brand", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server).get("/api/brandId").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 400 if tag is not an array", async () => {
+      const brnd = await createBrand();
+      brand.tags = "tag";
+      const res = await request(server)
+        .patch(`/api/brand/${brnd.id}`)
+        .set(header)
+        .send(brand);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 if owner is not an user", async () => {
+      const brnd = await createBrand();
+      brand.owner = "owner";
+      const res = await request(server)
+        .patch(`/api/brand/${brnd.id}`)
+        .set(header)
+        .send(brand);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 200 if brand is updated", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .patch(`/api/brand/${brnd.id}`)
+        .set(header)
+        .send(brand);
 
       expect(res.status).toBe(200);
     });

@@ -142,8 +142,6 @@ router.get("/:brand", [auth], async (req, res) => {
 });
 
 router.patch("/:brand", [auth], async (req, res) => {
-  if (!req.body) return res.status(400).send("No data provided");
-
   let { name, logo, description, owner, tags } = req.body;
 
   name = name
@@ -151,20 +149,9 @@ router.patch("/:brand", [auth], async (req, res) => {
     .toLowerCase()
     .replace(/[^a-zA-Z0-9 &]/g, "");
 
-  brand = await prisma.brand.findUnique({
+  let brand = await prisma.brand.findUnique({
     where: { id: req.params.brand },
   });
-
-  if (brand.name !== name) {
-    let brand = await prisma.brand.findUnique({
-      where: { name },
-      select: {
-        id: true,
-      },
-    });
-
-    if (brand) return res.status(400).json({ error: "Brand already exists" });
-  }
 
   if (!brand) return res.status(404).json({ error: "Brand not found" });
 
@@ -194,7 +181,7 @@ router.patch("/:brand", [auth], async (req, res) => {
     },
   });
 
-  if (!owner) return res.status(404).json({ error: "Owner is not a user" });
+  if (!owner) return res.status(400).json({ error: "Owner is not a user" });
 
   owner = owner.id;
 
