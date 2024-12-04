@@ -241,7 +241,7 @@ router.post("/:brand/favorite", [auth], async (req, res) => {
 
   if (!brand) return res.status(404).json({ error: "brand not found" });
 
-  const favorite = await prisma.favoritebrand.upsert({
+  const favorite = await prisma.favoriteBrand.upsert({
     where: {
       userId_brandId: {
         userId: req.user.id,
@@ -278,7 +278,7 @@ router.delete("/:brand/unfavorite", [auth], async (req, res) => {
 
   if (!brand) return res.status(404).json({ error: "brand not found" });
 
-  let favorite = await prisma.favoritebrand.findFirst({
+  let favorite = await prisma.favoriteBrand.findFirst({
     where: {
       userId: req.user.id,
       brandId: brand.id,
@@ -288,7 +288,7 @@ router.delete("/:brand/unfavorite", [auth], async (req, res) => {
   if (!favorite)
     return res.status(404).json({ error: "brand is not favorited" });
 
-  await prisma.favoritebrand.delete({
+  await prisma.favoriteBrand.delete({
     where: {
       userId_brandId: {
         userId: favorite.userId,
@@ -314,7 +314,7 @@ router.put("/:brand/upvote", [auth], async (req, res) => {
       userId_brandId: { brandId: req.params.brand, userId: req.user.id },
     },
     update: {
-      vote: 1,
+      vote: true,
     },
     create: {
       user: {
@@ -327,7 +327,7 @@ router.put("/:brand/upvote", [auth], async (req, res) => {
           id: req.params.brand,
         },
       },
-      vote: 1,
+      vote: true,
     },
   });
 
@@ -348,7 +348,7 @@ router.put("/:brand/downvote", [auth], async (req, res) => {
       userId_brandId: { brandId: req.params.brand, userId: req.user.id },
     },
     update: {
-      vote: -1,
+      vote: false,
     },
     create: {
       user: {
@@ -361,7 +361,7 @@ router.put("/:brand/downvote", [auth], async (req, res) => {
           id: req.params.brand,
         },
       },
-      vote: -1,
+      vote: false,
     },
   });
 

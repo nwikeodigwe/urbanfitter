@@ -246,7 +246,7 @@ model BrandVote {
   userId    String
   brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   brandId   String
-  vote      Int      @default(0)
+  vote      Boolean  @default(true)
   createdAt DateTime @default(now())
 
   @@unique([userId, brandId])

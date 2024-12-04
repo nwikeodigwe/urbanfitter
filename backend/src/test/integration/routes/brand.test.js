@@ -49,6 +49,34 @@ describe("Brand route", () => {
       },
     });
   };
+
+  const favoriteBrand = () => {
+    return prisma.favoriteBrand.create({
+      data: {
+        user: { connect: { email: user.email } },
+        brand: { connect: { name: brand.name } },
+      },
+    });
+  };
+
+  const upvote = () => {
+    return prisma.brandVote.create({
+      data: {
+        brand: { connect: { name: brand.name } },
+        user: { connect: { email: user.email } },
+      },
+    });
+  };
+
+  const subscribeBrand = () => {
+    return prisma.brandSubscription.create({
+      data: {
+        brand: { connect: { name: brand.name } },
+        user: { connect: { email: user.email } },
+      },
+    });
+  };
+
   beforeEach(async () => {
     server = app.listen(0, () => {
       server.address().port;
@@ -197,6 +225,161 @@ describe("Brand route", () => {
         .patch(`/api/brand/${brnd.id}`)
         .set(header)
         .send(brand);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("POST /:brand/favorite", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .post("/api/brand/brandId/favorite")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 201 if brand favorited", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/favorite`)
+        .set(header);
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  describe("POST /:brand/unfavorite", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .delete("/api/brand/brandId/unfavorite")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 404 if brand is not favorited", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}/unfavorite`)
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if brand unfavorited", async () => {
+      const brnd = await createBrand();
+      await favoriteBrand();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}/unfavorite`)
+        .set(header);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("PUT /:brand/upvote", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .put("/api/brand/brandId/upvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if brand upvoted", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .put(`/api/brand/${brnd.id}/upvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("PUT /:brand/downvote", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .put("/api/brand/brandId/downvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if brand downvoted", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .put(`/api/brand/${brnd.id}/downvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /:brand/unvote", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .delete("/api/brand/brandId/unvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if brand unvoted", async () => {
+      const brnd = await createBrand();
+      await upvote();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}/unvote`)
+        .set(header);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("POST /:brand/subscribe", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .post("/api/brand/brandId/subscribe")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 400 if already subscribed", async () => {
+      const brnd = await createBrand();
+      await subscribeBrand();
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/subscribe`)
+        .set(header);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("Should return 201 if subscribed to brand", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/subscribe`)
+        .set(header);
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  describe("DELETE /:brand/unsubscribe", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .delete("/api/brand/brandId/unsubscribe")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if subscribed to brand", async () => {
+      const brnd = await createBrand();
+      await subscribeBrand();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}/unsubscribe`)
+        .set(header);
 
       expect(res.status).toBe(200);
     });
