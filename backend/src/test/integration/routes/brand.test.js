@@ -144,4 +144,21 @@ describe("Brand route", () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe("GET /:brand", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server).get("/api/brandId").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if brand is found", async () => {
+      const brand = await createBrand();
+      const res = await request(server)
+        .get(`/api/brand/${brand.id}`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
 });
