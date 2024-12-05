@@ -496,4 +496,66 @@ describe("Brand route", () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe("GET /:brand/comments", () => {
+    it("Should return 404 if brand not found", async () => {
+      const res = await request(server)
+        .get("/api/brand/brandId/comments")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if comment found", async () => {
+      const brnd = await createBrand();
+      await createComment(brnd.id);
+      const res = await request(server)
+        .get(`/api/brand/${brnd.id}/comments`)
+        .set(header)
+        .send(comment);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /comment/:comment", () => {
+    it("Should return 404 if comment not found", async () => {
+      const res = await request(server)
+        .delete("/api/brand/comment/commentId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if comment found", async () => {
+      const brnd = await createBrand();
+      const comnt = await createComment(brnd.id);
+      const res = await request(server)
+        .delete(`/api/brand/comment/${comnt.id}`)
+        .set(header)
+        .send(comment);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("DELETE /:brand", () => {
+    it("Should return 404 if comment not found", async () => {
+      const res = await request(server)
+        .delete("/api/brand/brandId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if comment found", async () => {
+      const brnd = await createBrand();
+      const res = await request(server)
+        .delete(`/api/brand/${brnd.id}`)
+        .set(header)
+        .send(comment);
+
+      expect(res.status).toBe(204);
+    });
+  });
 });

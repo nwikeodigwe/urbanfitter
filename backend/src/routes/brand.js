@@ -566,54 +566,35 @@ router.post("/:brand/comment/:comment", [auth], async (req, res) => {
 });
 
 router.get("/:brand/comments", [auth], async (req, res) => {
-  const brands = await prisma.brand.findMany({
+  const brand = await prisma.brand.findFirst({
     where: {
       id: req.params.brand,
     },
-    select: {
-      comments: {
-        select: {
-          id: true,
-          content: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              likedBy: true,
-            },
-          },
-          replies: {
-            select: {
-              id: true,
-              content: true,
-              author: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
+  });
+
+  if (!brand) return res.status(404).json({ error: "No brand found" });
+
+  const comments = await prisma.comment.findMany({
+    where: {
+      id: req.params.brand,
     },
   });
 
-  if (!brands) return res.status(404).json({ error: "No brand found" });
-
-  res.status(200).json({ brands });
+  res.status(200).json({ comments });
 });
 
 router.delete("/comment/:comment", [auth], async (req, res) => {
-  const comment = await prisma.comment.delete({
-    where: { id: req.params.comment, authorId: req.user.id },
+  let comment = await prisma.comment.findFirst({
+    where: {
+      id: req.params.comment,
+    },
   });
 
   if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+  comment = await prisma.comment.delete({
+    where: { id: req.params.comment, authorId: req.user.id },
+  });
 
   res.status(204).end();
 });
