@@ -16,6 +16,26 @@ describe("Collection route", () => {
     return res.body.token;
   };
 
+  const createCollection = async () => {
+    const collect = await prisma.collection.create({
+      data: {
+        name: collection.name,
+        description: collection.description,
+        tags: {
+          connectOrCreate: collection.tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+        author: { connect: { email: user.email } },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return collect;
+  };
   beforeEach(async () => {
     server = app.listen(0, () => {
       server.address().port;
@@ -38,6 +58,7 @@ describe("Collection route", () => {
 
   afterEach(async () => {
     await prisma.user.deleteMany();
+    await prisma.collection.deleteMany();
     await prisma.$disconnect();
     await server.close();
   });
@@ -66,6 +87,40 @@ describe("Collection route", () => {
         .send(collection);
 
       expect(res.status).toBe(201);
+    });
+  });
+
+  describe("GET /", () => {
+    it("Should return 404 if no collection found", async () => {
+      const res = await request(server).get("/api/collection").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if collection found", async () => {
+      await createCollection();
+      const res = await request(server).get("/api/collection").set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("GET /:collection", () => {
+    it("Should return 404 if collection not fouund", async () => {
+      const res = await request(server)
+        .get("/api/collection/collectionId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if collection found", async () => {
+      collection = await createCollection();
+      const res = await request(server)
+        .get(`/api/collection/${collection.id}`)
+        .set(header);
+
+      expect(res.status).toBe(200);
     });
   });
 });

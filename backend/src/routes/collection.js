@@ -68,13 +68,10 @@ router.get("/", [auth], async (req, res) => {
       tags: {
         select: { name: true },
       },
-      _count: {
-        select: { likedBy: true },
-      },
     },
   });
 
-  if (!collections)
+  if (!collections.length)
     return res.status(404).json({ error: "No collection found" });
 
   res.status(200).json({ collections });
@@ -94,9 +91,6 @@ router.get("/:collection", [auth], async (req, res) => {
       },
       tags: {
         select: { name: true },
-      },
-      _count: {
-        select: { likedBy: true },
       },
     },
   });
