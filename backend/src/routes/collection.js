@@ -114,14 +114,11 @@ router.get("/:collection/styles", [auth], async (req, res) => {
       tags: {
         select: { name: true },
       },
-      _count: {
-        select: { likedBy: true },
-      },
       createdAt: true,
     },
   });
 
-  if (!styles) return res.status(404).json({ error: "No style found" });
+  if (!styles.length) return res.status(404).json({ error: "No style found" });
 
   res.status(200).json({ styles });
 });

@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 describe("Collection route", () => {
   let user;
   let collection;
+  let style;
   let token;
   let header;
 
@@ -36,6 +37,27 @@ describe("Collection route", () => {
 
     return collect;
   };
+
+  const createStyle = (collectionId) => {
+    return prisma.style.create({
+      data: {
+        name: style.name,
+        description: style.description,
+        tags: {
+          connectOrCreate: style.tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+        collection: { connect: { id: collectionId } },
+        author: { connect: { email: user.email } },
+      },
+      select: {
+        id: true,
+      },
+    });
+  };
+
   beforeEach(async () => {
     server = app.listen(0, () => {
       server.address().port;
@@ -47,6 +69,12 @@ describe("Collection route", () => {
     };
 
     collection = {
+      name: "name",
+      description: "description",
+      tags: ["tag1", "tag2"],
+    };
+
+    style = {
       name: "name",
       description: "description",
       tags: ["tag1", "tag2"],
@@ -118,6 +146,27 @@ describe("Collection route", () => {
       collection = await createCollection();
       const res = await request(server)
         .get(`/api/collection/${collection.id}`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("GET /:collection/styles", () => {
+    it("Should return 404 if no style found", async () => {
+      collection = await createCollection();
+      const res = await request(server)
+        .get(`/api/collection/${collection.id}/styles`)
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if style is found", async () => {
+      collection = await createCollection();
+      await createStyle(collection.id);
+      const res = await request(server)
+        .get(`/api/collection/${collection.id}/styles`)
         .set(header);
 
       expect(res.status).toBe(200);
