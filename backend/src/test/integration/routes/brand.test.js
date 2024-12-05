@@ -78,6 +78,20 @@ describe("Brand route", () => {
     });
   };
 
+  const createComment = async (id) => {
+    return prisma.comment.create({
+      data: {
+        content: comment.content,
+        author: { connect: { email: user.email } },
+        entity: "BRAND",
+        entityId: id,
+      },
+      select: {
+        id: true,
+      },
+    });
+  };
+
   beforeEach(async () => {
     server = app.listen(0, () => {
       server.address().port;
@@ -417,9 +431,19 @@ describe("Brand route", () => {
       expect(res.status).toBe(400);
     });
 
+    it("Should return 400 if tag is not an array", async () => {
+      comment.tags = "tag";
+      const brnd = await createBrand();
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment`)
+        .set(header)
+        .send(brand);
+
+      expect(res.status).toBe(400);
+    });
+
     it("Should return 201 if comment successful", async () => {
       const brnd = await createBrand();
-      console.log(comment);
       const res = await request(server)
         .post(`/api/brand/${brnd.id}/comment`)
         .set(header)
@@ -429,6 +453,47 @@ describe("Brand route", () => {
         });
 
       expect(res.status).toBe(201);
+    });
+  });
+
+  describe("POST /:brand/comment/:comment", () => {
+    it("Should return 404 if brand not found", async () => {
+      const res = await request(server)
+        .post("/api/brand/brandId/comment/commentId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 400 if tag is not an array", async () => {
+      const brnd = await createBrand();
+      const comnt = createComment(brnd.id);
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment/${comnt}`)
+        .set(header);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("Should return 400 if comment not provided", async () => {
+      const brnd = await createBrand();
+      const comnt = createComment(brnd.id);
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment/${comnt}`)
+        .set(header);
+
+      expect(res.status).toBe(400);
+    });
+
+    it("Should return 201 if comment successful", async () => {
+      const brnd = await createBrand();
+      const comnt = await createComment(brnd.id);
+      const res = await request(server)
+        .post(`/api/brand/${brnd.id}/comment/${comnt.id}`)
+        .set(header)
+        .send(comment);
+
+      expect(res.status).toBe(200);
     });
   });
 });

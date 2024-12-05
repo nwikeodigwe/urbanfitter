@@ -519,33 +519,36 @@ router.post("/:brand/comment", [auth], async (req, res) => {
 router.post("/:brand/comment/:comment", [auth], async (req, res) => {
   let { content, tags } = req.body;
 
-  if (!content) return res.status(400).json({ error: "Content required" });
-
   let brand = await prisma.brand.findUnique({
     where: { id: req.params.brand },
   });
 
   if (!brand) return res.status(404).json({ error: "brand not found" });
 
+  if (!content || content == null)
+    return res.status(400).json({ error: "Content required" });
+
   if (tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
 
-  tags = tags
-    .map((tag) => tag.trim().toLowerCase())
-    .replace(/[^a-zA-Z0-9]/g, "");
+  tags = tags.map((tag) =>
+    tag
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9]/g, "")
+  );
 
   let comment = await prisma.comment.findUnique({
     where: { id: req.params.comment },
   });
 
-  if (!comment) return res.status(404).json({ error: "Comment not found" });
+  if (!comment) return res.status(402).json({ error: "Comment not found" });
 
   comment = await prisma.comment.create({
     data: {
-      content: content,
+      content,
       ...(tags.length > 0 && {
-        tags: {
-          set: [],
+        tag: {
           connectOrCreate: tags.map((tag) => ({
             where: { name: tag },
             create: { name: tag },
@@ -553,7 +556,8 @@ router.post("/:brand/comment/:comment", [auth], async (req, res) => {
         },
       }),
       authorId: req.user.id,
-      brandId: req.params.brand,
+      entity: "BRAND",
+      entityId: req.params.brand,
       parentId: req.params.comment,
     },
   });
