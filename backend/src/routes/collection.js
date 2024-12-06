@@ -306,6 +306,14 @@ router.delete("/:collection/unvote", [auth], async (req, res) => {
 router.patch("/:collection", [auth], async (req, res) => {
   let { name, description, tags } = req.body;
 
+  let collection = await prisma.collection.findFirst({
+    where: { id: req.params.collection, authorId: req.user.id },
+    select: { id: true },
+  });
+
+  if (!collection)
+    return res.status(404).json({ error: "Collection not found" });
+
   if (!!tags && !Array.isArray(tags))
     return res.status(400).json({ error: "tags must be an array" });
 
@@ -316,14 +324,6 @@ router.patch("/:collection", [auth], async (req, res) => {
         .toLowerCase()
         .replace(/[^a-zA-Z0-9]/g, "")
     );
-
-  let collection = await prisma.collection.findFirst({
-    where: { id: req.params.collection, authorId: req.user.id },
-    select: { id: true },
-  });
-
-  if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
 
   name = name.trim() || collection.name;
   description = description.trim() || collection.description;
@@ -357,19 +357,22 @@ router.patch("/:collection", [auth], async (req, res) => {
     },
   });
 
-  if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
-
   res.status(200).json({ collection });
 });
 
 router.delete("/:collection", [auth], async (req, res) => {
-  const collection = await prisma.collection.delete({
-    where: { id: req.params.collection, authorId: req.user.id },
+  let collection = await prisma.collection.findFirst({
+    where: {
+      id: req.params.collection,
+    },
   });
 
   if (!collection)
     return res.status(404).json({ error: "Collection not found" });
+
+  await prisma.collection.delete({
+    where: { id: req.params.collection, authorId: req.user.id },
+  });
 
   res.status(204).end();
 });

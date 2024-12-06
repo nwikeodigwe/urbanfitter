@@ -38,6 +38,41 @@ describe("Collection route", () => {
     return collect;
   };
 
+  const favoriteCollection = async (collectionId) => {
+    const usr = await prisma.user.findFirst({
+      where: {
+        email: user.email,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return await prisma.favoriteCollection.upsert({
+      where: {
+        userId_collectionId: {
+          userId: usr.id,
+          collectionId: collectionId,
+        },
+      },
+      create: {
+        user: {
+          connect: {
+            email: user.email,
+          },
+        },
+        collection: {
+          connect: {
+            id: collectionId,
+          },
+        },
+      },
+      update: {},
+      select: {
+        id: true,
+      },
+    });
+  };
+
   const createStyle = (collectionId) => {
     return prisma.style.create({
       data: {
@@ -54,6 +89,41 @@ describe("Collection route", () => {
       },
       select: {
         id: true,
+      },
+    });
+  };
+
+  const createVote = async (collectionId) => {
+    const usr = await prisma.user.findFirst({
+      where: {
+        email: user.email,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return await prisma.collectionVote.upsert({
+      where: {
+        userId_collectionId: {
+          collectionId: collectionId,
+          userId: usr.id,
+        },
+      },
+      update: {
+        vote: 1,
+      },
+      create: {
+        user: {
+          connect: {
+            id: usr.id,
+          },
+        },
+        collection: {
+          connect: {
+            id: collectionId,
+          },
+        },
+        vote: 1,
       },
     });
   };
@@ -170,6 +240,156 @@ describe("Collection route", () => {
         .set(header);
 
       expect(res.status).toBe(200);
+    });
+  });
+  describe("POST /:collection/favorite", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .post("/api/collection/collectionId/favorite")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 201 if collection favorited", async () => {
+      collection = await createCollection();
+      const res = await request(server)
+        .post(`/api/collection/${collection.id}/favorite`)
+        .set(header);
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  describe("DELETE /:collection/unfovorite", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .post("/api/collection/collectionId/favorite")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 201 if collection unfavorited", async () => {
+      collect = await createCollection();
+      await favoriteCollection(collect.id);
+      const res = await request(server)
+        .post(`/api/collection/${collect.id}/favorite`)
+        .set(header);
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  describe("PUT /:collection/upvote", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .put("/api/collection/collectionId/upvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 201 if collection upvoted", async () => {
+      collect = await createCollection();
+      const res = await request(server)
+        .put(`/api/collection/${collect.id}/upvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("PUT /:collection/downvote", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .put("/api/collection/collectionId/upvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if collection downvoted", async () => {
+      collect = await createCollection();
+      const res = await request(server)
+        .put(`/api/collection/${collect.id}/downvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /:collection/unvote", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .delete("/api/collection/collectionId/unvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 404 if vote not found", async () => {
+      const res = await request(server)
+        .delete("/api/collection/collectionId/unvote")
+        .set(header);
+    });
+
+    it("Should return 200 if collection unvoted", async () => {
+      collect = await createCollection();
+      await createVote(collect.id);
+      const res = await request(server)
+        .delete(`/api/collection/${collect.id}/unvote`)
+        .set(header);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("PATCH /:collection", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .patch("/api/collection/collectionId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 400 if tag is not an array", async () => {
+      collection.tag = "tag";
+      const collect = await createCollection();
+      const res = await request(server)
+        .patch(`/api/collection/${collect.id}`)
+        .set(header)
+        .send(collection);
+    });
+
+    it("Should return 200 if collection downvoted", async () => {
+      collect = await createCollection();
+      const res = await request(server)
+        .patch(`/api/collection/${collect.id}`)
+        .set(header)
+        .send(collection);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /:collection", () => {
+    it("Should return 404 if collection not found", async () => {
+      const res = await request(server)
+        .delete("/api/collection/collectionId")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if collection deleted", async () => {
+      collect = await createCollection();
+      const res = await request(server)
+        .delete(`/api/collection/${collect.id}`)
+        .set(header);
+
+      expect(res.status).toBe(204);
     });
   });
 });
