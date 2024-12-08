@@ -527,7 +527,7 @@ describe("Brand route", () => {
       expect(res.status).toBe(404);
     });
 
-    it("Should return 204 if comment found", async () => {
+    it("Should return 204 if comment deleted", async () => {
       const brnd = await createBrand();
       const comnt = await createComment(brnd.id);
       const res = await request(server)

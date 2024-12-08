@@ -17,7 +17,6 @@ router.post("/", [auth], async (req, res) => {
   if (tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
 
-  console.log(tags);
   if (tags && tags.length > 0)
     tags = tags.map((tag) =>
       tag
@@ -26,7 +25,7 @@ router.post("/", [auth], async (req, res) => {
         .replace(/[^a-zA-Z0-9]/g, "")
     );
 
-  if (!brand) return res.status(404).json({ error: "Brand is required" });
+  if (!brand) return res.status(400).json({ error: "Brand is required" });
 
   brand = brand
     .trim()
@@ -55,8 +54,8 @@ router.post("/", [auth], async (req, res) => {
         },
       },
       images: {
-        create: images.map((imageId) => ({
-          image: { connect: { id: imageId } },
+        connect: images.map((image) => ({
+          id: image,
         })),
       },
       ...(tags &&
@@ -76,7 +75,7 @@ router.post("/", [auth], async (req, res) => {
     },
     include: {
       tags: { select: { name: true } },
-      images: { select: { image: { select: { url: true } } } },
+      images: { select: { url: true } },
       brand: { select: { name: true } },
     },
   });
@@ -86,27 +85,29 @@ router.post("/", [auth], async (req, res) => {
 
 router.get("/", [auth], async (req, res) => {
   const items = await prisma.item.findMany({
-    where: {
-      //   published: true,
-    },
+    //where: {
+    // Should fix
+    //   published: true,
+    //},
     select: {
       id: true,
       name: true,
       description: true,
-      images: { select: { image: { select: { url: true } } } },
+      images: { select: { url: true } },
       tags: { select: { name: true } },
       brand: { select: { name: true } },
       creator: { select: { name: true } },
-      _count: {
-        select: {
-          likedBy: true,
-        },
-      },
+      // Should fix
+      // _count: {
+      //   select: {
+      //     likedBy: true,
+      //   },
+      // },
       createdAt: true,
     },
   });
 
-  if (!items) return res.status(404).json({ error: "No item found" });
+  if (!items.length) return res.status(404).json({ error: "No item found" });
 
   res.status(200).json({ items });
 });
@@ -120,20 +121,16 @@ router.get("/:item", [auth], async (req, res) => {
       id: true,
       name: true,
       description: true,
-      images: { select: { image: { select: { url: true } } } },
+      images: { select: { url: true } },
       tags: { select: { name: true } },
       brand: { select: { name: true } },
-      _count: {
-        select: {
-          likedBy: true,
-        },
-      },
-      style: true,
-      _count: {
-        select: {
-          likedBy: true,
-        },
-      },
+      styles: true,
+      // Should fix
+      // _count: {
+      //   select: {
+      //     likedBy: true,
+      //   },
+      // },
       createdAt: true,
     },
   });
@@ -200,7 +197,7 @@ router.delete("/:item/unfavorite", [auth], async (req, res) => {
   });
 
   if (!favorite)
-    return res.status(404).json({ error: "item is not favorited" });
+    return res.status(400).json({ error: "item is not favorited" });
 
   await prisma.favoriteItem.delete({
     where: {
