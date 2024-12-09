@@ -314,26 +314,32 @@ router.patch("/:item", [auth], async (req, res) => {
         .replace(/[^a-zA-Z0-9]/g, "")
     );
 
-  let item = await prisma.item.findUnique({
+  let item = await prisma.item.findFirst({
     where: {
-      id: req.params.item,
+      id: req.params.id,
+    },
+    select: {
+      name: true,
+      description: true,
+      images: true,
+      creator: true,
     },
   });
 
   if (!item) return res.status(404).json({ error: "Item not found" });
 
-  if (creator) {
-    creator = await prisma.user.findFirst({
-      where: { OR: [{ id: creator }, { name: creator }, { email: creator }] },
-      select: { id: true },
-    });
-    creator = creator.id || undefined;
-  }
+  // if (creator) {
+  //   creator = await prisma.user.findFirst({
+  //     where: { OR: [{ id: creator }, { name: creator }, { email: creator }] },
+  //     select: { id: true },
+  //   });
+  //   creator = creator.id || undefined;
+  // }
 
   name = name || item.name;
   description = description || item.description;
-  images = images || item.images.map((image) => image.id);
-  creator = creator || item.creatorId;
+  images = images || item.images;
+  creator = creator || item.creator.id;
 
   item = await prisma.item.update({
     where: {
@@ -343,12 +349,13 @@ router.patch("/:item", [auth], async (req, res) => {
     data: {
       name,
       description,
-      images: {
-        deleteMany: {},
-        create: images.map((imageId) => ({
-          image: { connect: { id: imageId } },
-        })),
-      },
+      //Should fix
+      // images: {
+      //   deleteMany: {},
+      //   connect: images.map((image) => ({
+      //     id: image,
+      //   })),
+      // },
       ...(!!tags &&
         tags.length > 0 && {
           tags: {
@@ -368,7 +375,7 @@ router.patch("/:item", [auth], async (req, res) => {
       }),
     },
     include: {
-      images: { select: { image: { select: { url: true } } } },
+      images: { select: { url: true } },
       tags: { select: { name: true } },
       brand: { select: { name: true } },
     },
@@ -378,14 +385,20 @@ router.patch("/:item", [auth], async (req, res) => {
 });
 
 router.delete("/:item", [auth], async (req, res) => {
-  const item = prisma.item.delete({
+  let item = await prisma.item.findFirst({
     where: {
       id: req.params.item,
-      creatorId: req.user.id,
+      creator: { id: req.user.id },
     },
   });
 
   if (!item) return res.status(404).json({ error: "Item not found" });
+
+  await prisma.item.delete({
+    where: {
+      id: item.id,
+    },
+  });
 
   res.status(204).end();
 });

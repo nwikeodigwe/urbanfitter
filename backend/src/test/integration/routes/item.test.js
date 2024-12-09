@@ -39,6 +39,7 @@ describe("Item route", () => {
             create: { name: item.brand },
           },
         },
+        creator: { connect: { email: user.email } },
       },
       select: {
         id: true,
@@ -74,6 +75,32 @@ describe("Item route", () => {
             id: itemId,
           },
         },
+      },
+      update: {},
+    });
+  };
+
+  const upvote = async (itemId) => {
+    user = await prisma.user.findFirst({
+      where: {
+        email: user.email,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return prisma.itemVote.upsert({
+      where: {
+        userId_itemId: {
+          userId: user.id,
+          itemId: itemId,
+        },
+      },
+      create: {
+        user: {
+          connect: { id: user.id },
+        },
+        item: { connect: { id: itemId } },
       },
       update: {},
     });
@@ -247,18 +274,111 @@ describe("Item route", () => {
         .delete(`/api/item/${item.id}/unfavorite`)
         .set(header);
 
-      console.log(res.body);
-
       expect(res.status).toBe(400);
     });
 
     it("Should return 204 if item unfavorited", async () => {
       item = await createItem();
-      const fv = await favoriteItem(item.id);
-      console.log(fv);
+      await favoriteItem(item.id);
       const res = await request(server)
         .delete(`/api/item/${item.id}/unfavorite`)
         .set(header);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("PUT /:item/upvote", () => {
+    it("Should return 404 if brand is not found", async () => {
+      const res = await request(server)
+        .put("/api/item/itemId/upvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if item upvoted", async () => {
+      item = await createItem();
+      const res = await request(server)
+        .put(`/api/item/${item.id}/upvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("PUT /:item/downvote", () => {
+    it("Should return 404 if item is not found", async () => {
+      const res = await request(server)
+        .put("/api/item/itemId/downvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if brand downvoted", async () => {
+      item = await createItem();
+      const res = await request(server)
+        .put(`/api/item/${item.id}/downvote`)
+        .set(header);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /:item/unvote", () => {
+    it("Should return 404 if item not found", async () => {
+      const res = await request(server)
+        .delete("/api/item/itemId/unvote")
+        .set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if item unvoted", async () => {
+      item = await createItem();
+      await upvote(item.id);
+      const res = await request(server)
+        .delete(`/api/item/${item.id}/unvote`)
+        .set(header);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("PATCH /:item/", () => {
+    it("Should return 404 if item not found", async () => {
+      const res = await request(server).patch("/api/item/itemId").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 200 if item updated", async () => {
+      item = await createItem();
+      const res = await request(server)
+        .patch(`/api/item/${item.id}`)
+        .set(header)
+        .send({ name: "name++" });
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("DELETE /:item", () => {
+    it("Should return 404 if item not found", async () => {
+      const res = await request(server).delete("/api/item/itemId").set(header);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("Should return 204 if item deleted", async () => {
+      item = await createItem();
+      const res = await request(server)
+        .delete(`/api/item/${item.id}`)
+        .set(header);
+
+      console.log(item);
+      console.log(res.body);
 
       expect(res.status).toBe(204);
     });
