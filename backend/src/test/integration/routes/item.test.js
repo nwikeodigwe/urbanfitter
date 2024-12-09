@@ -377,9 +377,6 @@ describe("Item route", () => {
         .delete(`/api/item/${item.id}`)
         .set(header);
 
-      console.log(item);
-      console.log(res.body);
-
       expect(res.status).toBe(204);
     });
   });

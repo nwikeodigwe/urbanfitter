@@ -17,8 +17,8 @@ describe("Collection route", () => {
     return res.body.token;
   };
 
-  const createCollection = async () => {
-    const collect = await prisma.collection.create({
+  const createCollection = () => {
+    return prisma.collection.create({
       data: {
         name: collection.name,
         description: collection.description,
@@ -34,8 +34,6 @@ describe("Collection route", () => {
         id: true,
       },
     });
-
-    return collect;
   };
 
   const favoriteCollection = async (collectionId) => {
