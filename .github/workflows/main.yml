@@ -25,6 +25,9 @@ jobs:
       run: cd backend |
             npm ci
             
+    - name: Run migration
+      run: npm run prisma:test
+            
     - name: Create .env file
       run: |
         echo "NODE_ENV=test" > .env
