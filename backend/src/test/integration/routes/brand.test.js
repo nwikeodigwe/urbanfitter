@@ -520,6 +520,7 @@ describe("Brand route", () => {
 
   describe("DELETE /comment/:comment", () => {
     it("Should return 404 if comment not found", async () => {
+      await createBrand();
       const res = await request(server)
         .delete("/api/brand/comment/commentId")
         .set(header);
@@ -527,7 +528,7 @@ describe("Brand route", () => {
       expect(res.status).toBe(404);
     });
 
-    it("Should return 204 if comment deleted", async () => {
+    it("Should return 204 if comment found", async () => {
       const brnd = await createBrand();
       const comnt = await createComment(brnd.id);
       const res = await request(server)
@@ -539,7 +540,7 @@ describe("Brand route", () => {
     });
   });
 
-  describe("DELETE /:brand", () => {
+  describe("DELETE /:style", () => {
     it("Should return 404 if comment not found", async () => {
       const res = await request(server)
         .delete("/api/brand/brandId")

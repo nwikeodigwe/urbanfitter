@@ -75,8 +75,43 @@ router.post("/", [auth], async (req, res) => {
 
 router.get("/", [auth], async (req, res) => {
   const styles = await prisma.style.findMany({
+    // Should fix
+    // where: {
+    //   published: true,
+    // },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      tags: { select: { name: true } },
+      collection: {
+        select: {
+          name: true,
+        },
+      },
+      // Should fix
+      // _count: {
+      //   select: { likedBy: true },
+      // },
+      createdAt: true,
+    },
+  });
+
+  if (!styles.length) return res.status(404).json({ error: "No style found" });
+
+  res.status(200).json({ styles });
+});
+
+router.get("/me", [auth], async (req, res) => {
+  const styles = await prisma.style.findMany({
     where: {
-      published: true,
+      author: { id: req.user.id },
     },
     select: {
       id: true,
@@ -94,14 +129,15 @@ router.get("/", [auth], async (req, res) => {
           name: true,
         },
       },
-      _count: {
-        select: { likedBy: true },
-      },
+      // Should fix
+      // _count: {
+      //   select: { likedBy: true },
+      // },
       createdAt: true,
     },
   });
 
-  if (!styles) return res.status(404).json({ error: "No style found" });
+  if (!styles.length) return res.status(404).json({ error: "No style found" });
 
   res.status(200).json({ styles });
 });
@@ -128,9 +164,10 @@ router.get("/:style", [auth], async (req, res) => {
           name: true,
         },
       },
-      _count: {
-        select: { likedBy: true },
-      },
+      // Should fix
+      // _count: {
+      //   select: { likedBy: true },
+      // },
       createdAt: true,
     },
   });
@@ -140,67 +177,41 @@ router.get("/:style", [auth], async (req, res) => {
   res.status(200).json({ style });
 });
 
-router.get("/me", [auth], async (req, res) => {
-  const styles = await prisma.style.findMany({
-    where: {
-      authorId: req.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      published: true,
-      _count: {
-        select: { likedBy: true },
-      },
-      tags: { select: { name: true } },
-      collection: {
-        select: {
-          name: true,
-        },
-      },
-      createdAt: true,
-    },
-  });
+// router.get(":style/user/:user", [auth], async (req, res) => {
+//   const styles = await prisma.style.findMany({
+//     where: {
+//       id: req.params.style,
+//       authorId: req.params.user,
+//     },
+//     select: {
+//       id: true,
+//       name: true,
+//       description: true,
+//       published: true,
+//       tags: { select: { name: true } },
+//       _count: {
+//         select: { likedBy: true },
+//       },
+//       createdAt: true,
+//     },
+//   });
 
-  if (!styles) return res.status(404).json({ error: "Posts not found" });
+//   if (!styles) return res.status(404).json({ error: "No style found" });
 
-  res.status(200).json({ styles });
-});
-
-router.get(":style/user/:user", [auth], async (req, res) => {
-  const styles = await prisma.style.findMany({
-    where: {
-      id: req.params.style,
-      authorId: req.params.user,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      published: true,
-      tags: { select: { name: true } },
-      _count: {
-        select: { likedBy: true },
-      },
-      createdAt: true,
-    },
-  });
-
-  if (!styles) return res.status(404).json({ error: "No style found" });
-
-  res.status(200).json({ styles });
-});
+//   res.status(200).json({ styles });
+// });
 
 router.post("/:style/comment", [auth], async (req, res) => {
   const entity = "STYLE";
   let { content, tags } = req.body;
 
-  if (!content) return res.status(400).json({ error: "Comment required" });
-
   const style = await prisma.style.findUnique({
     where: { id: req.params.style },
   });
+
+  if (!style) return res.status(404).json({ error: "Style not found" });
+
+  if (!content) return res.status(400).json({ error: "Comment required" });
 
   if (tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
@@ -213,16 +224,14 @@ router.post("/:style/comment", [auth], async (req, res) => {
         .replace(/[^a-zA-Z0-9]/g, "")
     );
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
-
   const comment = await prisma.comment.create({
     data: {
       content,
-      entity: entity,
+      entity,
       entityId: req.params.style,
       ...(!!tags &&
         tags.length > 0 && {
-          tags: {
+          tag: {
             connectOrCreate: tags.map((tag) => ({
               where: { name: tag },
               create: { name: tag },
@@ -244,16 +253,16 @@ router.post("/:style/comment/:comment", [auth], async (req, res) => {
   const entity = "STYLE";
   let { content, tags } = req.body;
 
-  if (!content) return res.status(400).json({ error: "Content required" });
-
   let style = await prisma.style.findUnique({
     where: { id: req.params.style },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ error: req.params.style });
+
+  if (!content) return res.status(400).json({ error: "No comment provided" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(402).json({ error: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -278,7 +287,7 @@ router.post("/:style/comment/:comment", [auth], async (req, res) => {
       content: content,
       ...(!!tags &&
         tags.length > 0 && {
-          tags: {
+          tag: {
             connectOrCreate: tags.map((tag) => ({
               where: { name: tag },
               create: { name: tag },
@@ -292,7 +301,7 @@ router.post("/:style/comment/:comment", [auth], async (req, res) => {
     },
   });
 
-  res.status(200).json({ comment });
+  res.status(201).json({ comment });
 });
 
 router.get("/:style/comments", [auth], async (req, res) => {
@@ -335,11 +344,15 @@ router.get("/:style/comments", [auth], async (req, res) => {
 });
 
 router.delete("/comment/:comment", [auth], async (req, res) => {
-  const comment = await prisma.comment.delete({
-    where: { id: req.params.comment, authorId: req.user.id },
+  let comment = await prisma.comment.findFirst({
+    where: { id: req.params.comment },
   });
 
   if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+  comment = await prisma.comment.delete({
+    where: { id: req.params.comment, authorId: req.user.id },
+  });
 
   res.status(204).end();
 });
@@ -585,11 +598,15 @@ router.patch("/:style/unpublish", [auth], async (req, res) => {
 });
 
 router.delete("/:style", [auth], async (req, res) => {
-  const style = await prisma.style.delete({
-    where: { id: req.params.style, authorId: req.user.id },
+  let style = await prisma.style.findFirst({
+    where: { id: req.params.style },
   });
 
-  if (!style) return res.status(404).json({ error: "Post not found" });
+  if (!style) return res.status(404).json({ error: style });
+
+  style = await prisma.style.delete({
+    where: { id: req.params.style, authorId: req.user.id },
+  });
 
   res.status(204).end();
 });
