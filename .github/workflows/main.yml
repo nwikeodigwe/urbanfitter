@@ -22,8 +22,8 @@ jobs:
         node-version: '22' 
 
     - name: Install dependencies
-      run: cd backend |
-            npm ci
+      run: cd backend | ls -l |
+            npm install
             
     - name: Run migration
       run: npm run prisma:test
@@ -34,5 +34,5 @@ jobs:
         echo "DATABASE_URL=file:./test.db" >> .env
 
 
-    - name: Run run test
+    - name: Run tests
       run: npm run test
