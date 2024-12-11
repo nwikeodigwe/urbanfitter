@@ -12,6 +12,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    strategy:
+     matrix:
+      node-version: [16, 18, 20] 
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -19,20 +23,19 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '22' 
+        node-version: ${{ matrix.node-version }}
 
     - name: Install dependencies
       run: cd backend | ls -l |
             npm install
+
+    - name: Create .env file
+      run: |
+        echo "NODE_ENV=test" > .env.test
+        echo "DATABASE_URL=file:./test.db" >> .env.test
             
     - name: Run migration
       run: npm run prisma:test
-            
-    - name: Create .env file
-      run: |
-        echo "NODE_ENV=test" > .env
-        echo "DATABASE_URL=file:./test.db" >> .env
-
 
     - name: Run tests
       run: npm run test
