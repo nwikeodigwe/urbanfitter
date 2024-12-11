@@ -159,8 +159,6 @@ describe("Style Route", () => {
     it("Should return 400 if name and description not provided", async () => {
       const res = await request(server).post("/api/style").set(header);
 
-      console.log(res.body);
-
       expect(res.status).toBe(400);
     });
 
@@ -493,9 +491,6 @@ describe("Style Route", () => {
         .delete(`/api/style/${style}`)
         .set(header)
         .send(comment);
-
-      console.log(res.body);
-      console.log(style);
 
       expect(res.status).toBe(204);
     });

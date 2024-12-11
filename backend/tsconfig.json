@@ -116,8 +116,8 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts",
-    "src/routes/user.js",
-    "src/routes/user.js",
+    "src/routes/userRoute.js",
+    "src/routes/userRoute.js",
     "src/custom.d.ts",
     "src/middleware/auth.js",
     "src/app.js",

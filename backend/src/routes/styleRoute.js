@@ -8,6 +8,9 @@ const prisma = new PrismaClient();
 router.post("/", [auth], async (req, res) => {
   let { name, description, collection, tags } = req.body;
 
+  if (!name || !description)
+    return res.status(400).json({ error: "name and description is required" });
+
   collection = await prisma.collection.findUnique({
     where: { id: collection },
     select: { id: true },
@@ -15,9 +18,6 @@ router.post("/", [auth], async (req, res) => {
 
   if (!collection)
     return res.status(404).json({ error: "Collection not found" });
-
-  if (!name || !description)
-    return res.status(400).json({ error: "name and description is required" });
 
   if (!!tags && !Array.isArray(tags))
     return res.status(400).json({ error: "Tags must be an array" });
