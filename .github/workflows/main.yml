@@ -32,4 +32,4 @@ jobs:
 
 
     - name: Run run test
-      run: npm run test
+      run: npx jest
