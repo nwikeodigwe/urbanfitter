@@ -35,7 +35,7 @@ jobs:
         echo "DATABASE_URL=file:./test.db" >> .env.test
             
     - name: Run migration
-      run: npm run prisma:test
+      run: npm run 
 
     - name: Run tests
       run: npm run test
