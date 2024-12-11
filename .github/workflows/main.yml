@@ -24,6 +24,12 @@ jobs:
     - name: Install dependencies
       run: cd backend |
             npm install
+            
+    - name: Create .env file
+      run: |
+        echo "NODE_ENV=test" > .env
+        echo "DATABASE_URL=file:./test.db" >> .env
 
-    - name: Run tests
-      run: npm test
+
+    - name: Run run test
+      run: npm run test
