@@ -26,8 +26,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install dependencies
-      run: cd backend | ls -l |
-            npm install
+      run: cd backend | ls -l 
 
     - name: Create .env file
       run: |
