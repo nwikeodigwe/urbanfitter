@@ -408,7 +408,6 @@ describe("Brand route", () => {
       const res = await request(server)
         .delete(`/api/brand/${brnd.id}/unsubscribe`)
         .set(header);
-
       expect(res.status).toBe(200);
     });
   });
