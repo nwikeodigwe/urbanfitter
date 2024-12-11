@@ -25,8 +25,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Change directory
+      run: cd backend
+
     - name: Install dependencies
-      run: cd backend && npm install 
+      run: npm install 
 
     - name: Create .env file
       run: |
@@ -34,7 +37,7 @@ jobs:
         echo "DATABASE_URL=file:./test.db" >> .env.test
             
     - name: Run migration
-      run: npm run 
+      run: npm run prisma:test
 
     - name: Run tests
       run: npm run test
