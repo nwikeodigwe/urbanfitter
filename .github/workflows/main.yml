@@ -30,9 +30,9 @@ jobs:
         cd backend
         npm install
         echo "NODE_ENV=test" > .env.test
-        echo "DATABASE_URL=${{secret.DATABASE_URL}}" >> .env.test
-        echo "JWT_SECRET=${{secret.JWT_SECRET}}" >> .env.test
-        echo "FACEBOOK_CLIENT_SECRET=${{secret.FACEBOOK_CLIENT_SECRET}}" >> .env.test
-        echo "FACEBOOK_CLIENT_ID=${{secret.FACEBOOK_CLIENT_ID}}" >> .env.test
-        echo "RESEND_API_KEY=${{secret.RESEND_API_KEY}}" >> .env.test
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.test
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.test
+        echo "FACEBOOK_CLIENT_SECRET=${{ secrets.FACEBOOK_CLIENT_SECRET }}" >> .env.test
+        echo "FACEBOOK_CLIENT_ID=${{ secrets.FACEBOOK_CLIENT_ID }}" >> .env.test
+        echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env.test
         npm run test
