@@ -5,7 +5,9 @@ exports.createStyle = async (req, res) => {
   let { name, description, collection, tags } = req.body;
 
   if (!name || !description)
-    return res.status(400).json({ error: "name and description is required" });
+    return res
+      .status(400)
+      .json({ message: "name and description is required" });
 
   collection = await prisma.collection.findUnique({
     where: { id: collection },
@@ -13,10 +15,10 @@ exports.createStyle = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   if (!!tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -99,7 +101,8 @@ exports.getAllStyle = async (req, res) => {
     },
   });
 
-  if (!styles.length) return res.status(404).json({ error: "No style found" });
+  if (!styles.length)
+    return res.status(404).json({ message: "No style found" });
 
   res.status(200).json({ styles });
 };
@@ -133,7 +136,8 @@ exports.getStyle = async (req, res) => {
     },
   });
 
-  if (!styles.length) return res.status(404).json({ error: "No style found" });
+  if (!styles.length)
+    return res.status(404).json({ message: "No style found" });
 
   res.status(200).json({ styles });
 };
@@ -168,7 +172,7 @@ exports.getStyleById = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "No style found" });
+  if (!style) return res.status(404).json({ message: "No style found" });
 
   res.status(200).json({ style });
 };
@@ -181,12 +185,12 @@ exports.createComment = async (req, res) => {
     where: { id: req.params.style },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
-  if (!content) return res.status(400).json({ error: "Comment required" });
+  if (!content) return res.status(400).json({ message: "Comment required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -229,12 +233,12 @@ exports.createCommentComment = async (req, res) => {
     where: { id: req.params.style },
   });
 
-  if (!style) return res.status(404).json({ error: req.params.style });
+  if (!style) return res.status(404).json({ message: req.params.style });
 
-  if (!content) return res.status(400).json({ error: "No comment provided" });
+  if (!content) return res.status(400).json({ message: "No comment provided" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(402).json({ error: "Tags must be an array" });
+    return res.status(402).json({ message: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -252,7 +256,7 @@ exports.createCommentComment = async (req, res) => {
     },
   });
 
-  if (!comment) return res.status(404).json({ error: "Comment not found" });
+  if (!comment) return res.status(404).json({ message: "Comment not found" });
 
   comment = await prisma.comment.create({
     data: {
@@ -310,7 +314,7 @@ exports.getStyleComment = async (req, res) => {
   });
 
   if (comments.length < 1)
-    return res.status(404).json({ error: "No comment found" });
+    return res.status(404).json({ message: "No comment found" });
 
   res.status(200).json({ comments });
 };
@@ -320,7 +324,7 @@ exports.deleteComment = async (req, res) => {
     where: { id: req.params.comment },
   });
 
-  if (!comment) return res.status(404).json({ error: "Comment not found" });
+  if (!comment) return res.status(404).json({ message: "Comment not found" });
 
   comment = await prisma.comment.delete({
     where: { id: req.params.comment, authorId: req.user.id },
@@ -333,13 +337,15 @@ exports.updateStyle = async (req, res) => {
   let { name, description, items, tags } = req.body;
 
   if (!name && !description)
-    return res.status(400).json({ error: "Name and description is required" });
+    return res
+      .status(400)
+      .json({ message: "Name and description is required" });
 
   if (items && !Array.isArray(items))
-    return res.status(400).json({ error: "Items must be an array" });
+    return res.status(400).json({ message: "Items must be an array" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   tags = tags
     .map((tag) => tag.trim().toLowerCase())
@@ -367,7 +373,7 @@ exports.updateStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   res.status(200).json({ style });
 };
@@ -382,7 +388,7 @@ exports.favoriteStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   const favorite = await prisma.favoriteStyle.upsert({
     where: {
@@ -419,7 +425,7 @@ exports.unfavoriteStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   let favorite = await prisma.favoriteStyle.findFirst({
     where: {
@@ -429,7 +435,7 @@ exports.unfavoriteStyle = async (req, res) => {
   });
 
   if (!favorite)
-    return res.status(404).json({ error: "Style is not favorited" });
+    return res.status(404).json({ message: "Style is not favorited" });
 
   await prisma.favoriteStyle.delete({
     where: {
@@ -450,7 +456,7 @@ exports.upvoteStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   const upvote = await prisma.styleVote.upsert({
     where: {
@@ -487,7 +493,7 @@ exports.downvoteStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   const downvote = await prisma.styleVote.upsert({
     where: {
@@ -524,7 +530,7 @@ exports.unvoteStyle = async (req, res) => {
     },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   const vote = await prisma.styleVote.findFirst({
     where: {
@@ -533,7 +539,7 @@ exports.unvoteStyle = async (req, res) => {
     },
   });
 
-  if (!vote) return res.status(404).json({ error: "Vote not found" });
+  if (!vote) return res.status(404).json({ message: "Vote not found" });
 
   await prisma.styleVote.delete({
     where: {
@@ -553,7 +559,7 @@ exports.publishStyle = async (req, res) => {
     data: { published: true },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   res.status(200).json({ style });
 };
@@ -564,7 +570,7 @@ exports.unpublishStyle = async (req, res) => {
     data: { published: false },
   });
 
-  if (!style) return res.status(404).json({ error: "Style not found" });
+  if (!style) return res.status(404).json({ message: "Style not found" });
 
   res.status(200).json({ style });
 };
@@ -574,7 +580,7 @@ exports.deleteStyle = async (req, res) => {
     where: { id: req.params.style },
   });
 
-  if (!style) return res.status(404).json({ error: style });
+  if (!style) return res.status(404).json({ message: style });
 
   style = await prisma.style.delete({
     where: { id: req.params.style, authorId: req.user.id },

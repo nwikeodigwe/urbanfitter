@@ -11,11 +11,11 @@ exports.signUp = async (req, res) => {
   let { email, password } = req.body;
 
   if (!email || !password)
-    return res.status(400).json({ error: "Email and password required" });
+    return res.status(400).json({ message: "Email and password required" });
 
   let user = await prisma.user.findUnique({ where: { email } });
 
-  if (user) return res.status(400).json({ error: "User already exists" });
+  if (user) return res.status(400).json({ message: "User already exists" });
 
   const salt = await bcrypt.genSalt(10);
   password = await bcrypt.hash(password, salt);
@@ -50,7 +50,7 @@ exports.signIn = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password)
-    return res.status(400).json({ error: "Email and password required" });
+    return res.status(400).json({ message: "Email and password required" });
 
   const user = await prisma.user.findUnique({
     where: {
@@ -58,12 +58,12 @@ exports.signIn = async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   const passwordMatch = await bcrypt.compare(password, user.password);
 
   if (!passwordMatch)
-    return res.status(400).json({ error: "Invalid password" });
+    return res.status(400).json({ message: "Invalid password" });
   const token = jwt.sign(
     {
       id: user.id,
@@ -93,14 +93,14 @@ exports.facebookCallback = (req, res) => {
 exports.reset = async (req, res) => {
   let { email } = req.body;
 
-  if (!email) return res.status(400).json({ error: "Email required" });
+  if (!email) return res.status(400).json({ message: "Email required" });
 
   const user = await prisma.user.findUnique({
     where: { email },
     select: { id: true },
   });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   await prisma.reset.updateMany({
     where: { user: { id: user.id }, expires: { lte: new Date() } },
@@ -126,17 +126,17 @@ exports.resetToken = async (req, res) => {
   let { password } = req.body;
 
   if (!token || !password)
-    return res.status(400).json({ error: "Token and password required" });
+    return res.status(400).json({ message: "Token and password required" });
 
   const reset = await prisma.reset.findUnique({
     where: { token },
     include: { user: true },
   });
 
-  if (!reset) return res.status(400).json({ error: "Invalid token" });
+  if (!reset) return res.status(400).json({ message: "Invalid token" });
 
   if (reset.expires < new Date())
-    return res.status(400).json({ error: "Token expired" });
+    return res.status(400).json({ message: "Token expired" });
 
   const salt = await bcrypt.genSalt(10);
   password = await bcrypt.hash(password, salt);

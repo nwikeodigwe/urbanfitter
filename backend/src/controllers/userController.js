@@ -19,7 +19,7 @@ exports.getAllUsers = async (req, res) => {
     },
   });
 
-  if (!users.length) return res.status(404).json({ error: "No user found" });
+  if (!users.length) return res.status(404).json({ message: "No user found" });
 
   res.status(200).json(users);
 };
@@ -38,7 +38,7 @@ exports.subscribeToUser = async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   let subscription = await prisma.userSubscription.findFirst({
     where: {
@@ -48,7 +48,7 @@ exports.subscribeToUser = async (req, res) => {
   });
 
   if (subscription)
-    return res.status(400).json({ error: "Already subscribed" });
+    return res.status(400).json({ message: "Already subscribed" });
 
   subscription = await prisma.userSubscription.create({
     data: {
@@ -85,7 +85,7 @@ exports.unsubscribeFromUser = async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   const subscription = await prisma.userSubscription.findFirst({
     where: {
@@ -94,7 +94,7 @@ exports.unsubscribeFromUser = async (req, res) => {
     },
   });
 
-  if (!subscription) return res.status(400).json({ error: "Not subscribed" });
+  if (!subscription) return res.status(400).json({ message: "Not subscribed" });
 
   await prisma.userSubscription.delete({
     where: {
@@ -217,7 +217,7 @@ exports.getUserById = async (req, res) => {
     },
   });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   res.status(200).json(user);
 };

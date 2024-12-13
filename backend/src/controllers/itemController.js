@@ -5,13 +5,15 @@ exports.createItem = async (req, res) => {
   let { name, description, brand, images, creator, tags } = req.body;
 
   if (!name || !description)
-    return res.status(400).json({ error: "Name and description is required" });
+    return res
+      .status(400)
+      .json({ message: "Name and description is required" });
 
   if (!Array.isArray(images) || images.length === 0)
-    return res.status(400).json({ error: "At least one image is required" });
+    return res.status(400).json({ message: "At least one image is required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -21,7 +23,7 @@ exports.createItem = async (req, res) => {
         .replace(/[^a-zA-Z0-9]/g, "")
     );
 
-  if (!brand) return res.status(400).json({ error: "Brand is required" });
+  if (!brand) return res.status(400).json({ message: "Brand is required" });
 
   brand = brand
     .trim()
@@ -103,7 +105,7 @@ exports.getItem = async (req, res) => {
     },
   });
 
-  if (!items.length) return res.status(404).json({ error: "No item found" });
+  if (!items.length) return res.status(404).json({ message: "No item found" });
 
   res.status(200).json({ items });
 };
@@ -131,7 +133,7 @@ exports.getItemById = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   res.status(200).json({ item });
 };
@@ -146,7 +148,7 @@ exports.favoriteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "item not found" });
+  if (!item) return res.status(404).json({ message: "item not found" });
 
   const favorite = await prisma.favoriteItem.upsert({
     where: {
@@ -183,7 +185,7 @@ exports.unfavoriteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "item not found" });
+  if (!item) return res.status(404).json({ message: "item not found" });
 
   let favorite = await prisma.favoriteItem.findFirst({
     where: {
@@ -193,7 +195,7 @@ exports.unfavoriteItem = async (req, res) => {
   });
 
   if (!favorite)
-    return res.status(400).json({ error: "item is not favorited" });
+    return res.status(400).json({ message: "item is not favorited" });
 
   await prisma.favoriteItem.delete({
     where: {
@@ -214,7 +216,7 @@ exports.upvoteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   const upvote = await prisma.itemVote.upsert({
     where: {
@@ -248,7 +250,7 @@ exports.downvoteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   const downvote = await prisma.itemVote.upsert({
     where: {
@@ -282,7 +284,7 @@ exports.unvoteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   await prisma.itemVote.delete({
     where: {
@@ -297,10 +299,10 @@ exports.updateItem = async (req, res) => {
   let { name, description, images, tags, creator } = req.body;
 
   if (images && (!Array.isArray(images) || images.length === 0))
-    return res.status(400).json({ error: "At least one image is required" });
+    return res.status(400).json({ message: "At least one image is required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -322,7 +324,7 @@ exports.updateItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   // if (creator) {
   //   creator = await prisma.user.findFirst({
@@ -388,7 +390,7 @@ exports.deleteItem = async (req, res) => {
     },
   });
 
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return res.status(404).json({ message: "Item not found" });
 
   await prisma.item.delete({
     where: {

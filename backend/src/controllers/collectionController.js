@@ -5,10 +5,12 @@ exports.createCollection = async (req, res) => {
   let { name, description, tags } = req.body;
 
   if (!name || !description)
-    return res.status(400).json({ error: "name and description is required" });
+    return res
+      .status(400)
+      .json({ message: "name and description is required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "tags must be an array" });
+    return res.status(400).json({ message: "tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -68,7 +70,7 @@ exports.getCollections = async (req, res) => {
   });
 
   if (!collections.length)
-    return res.status(404).json({ error: "No collection found" });
+    return res.status(404).json({ message: "No collection found" });
 
   res.status(200).json({ collections });
 };
@@ -92,7 +94,7 @@ exports.getCollectionById = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   res.status(200).json({ collection });
 };
@@ -114,7 +116,8 @@ exports.getCollectionStyles = async (req, res) => {
     },
   });
 
-  if (!styles.length) return res.status(404).json({ error: "No style found" });
+  if (!styles.length)
+    return res.status(404).json({ message: "No style found" });
 
   res.status(200).json({ styles });
 };
@@ -130,7 +133,7 @@ exports.favoriteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   const favorite = await prisma.favoriteCollection.upsert({
     where: {
@@ -168,7 +171,7 @@ exports.unfavoriteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   const upvote = await prisma.collectionVote.upsert({
     where: {
@@ -206,7 +209,7 @@ exports.upvoteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   const upvote = await prisma.collectionVote.upsert({
     where: {
@@ -244,7 +247,7 @@ exports.downvoteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "collection not found" });
+    return res.status(404).json({ message: "collection not found" });
 
   const downvote = await prisma.collectionVote.upsert({
     where: {
@@ -282,7 +285,7 @@ exports.unvoteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   const vote = await prisma.collectionVote.findFirst({
     where: {
@@ -291,7 +294,7 @@ exports.unvoteCollection = async (req, res) => {
     },
   });
 
-  if (!vote) return res.status(404).json({ error: "Vote not found" });
+  if (!vote) return res.status(404).json({ message: "Vote not found" });
 
   await prisma.collectionVote.delete({
     where: {
@@ -314,10 +317,10 @@ exports.updateCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   if (!!tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "tags must be an array" });
+    return res.status(400).json({ message: "tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -370,7 +373,7 @@ exports.deleteCollection = async (req, res) => {
   });
 
   if (!collection)
-    return res.status(404).json({ error: "Collection not found" });
+    return res.status(404).json({ message: "Collection not found" });
 
   await prisma.collection.delete({
     where: { id: req.params.collection, authorId: req.user.id },

@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 exports.createBrand = async (req, res) => {
   let { name, logo, owner, tags } = req.body;
 
-  if (!name) return res.status(400).json({ error: "Name is required" });
+  if (!name) return res.status(400).json({ message: "Name is required" });
 
   name = name
     .trim()
@@ -14,7 +14,7 @@ exports.createBrand = async (req, res) => {
   if (owner) owner = owner.trim().toLowerCase();
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -33,7 +33,7 @@ exports.createBrand = async (req, res) => {
   if (logo)
     return res
       .status(400)
-      .json({ error: "No two brands can have the same logo" });
+      .json({ message: "No two brands can have the same logo" });
 
   logo = req.body.logo || undefined;
 
@@ -44,7 +44,7 @@ exports.createBrand = async (req, res) => {
     },
   });
 
-  if (brand) return res.status(400).json({ error: "Brand already exists" });
+  if (brand) return res.status(400).json({ message: "Brand already exists" });
 
   owner = await prisma.user.findFirst({
     where: {
@@ -109,7 +109,7 @@ exports.getAllBrands = async (req, res) => {
   });
 
   if (brands.length == 0)
-    return res.status(404).json({ error: "No brand found" });
+    return res.status(404).json({ message: "No brand found" });
 
   res.status(200).json({ brands });
 };
@@ -132,7 +132,7 @@ exports.getBrandById = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "Brand not found" });
+  if (!brand) return res.status(404).json({ message: "Brand not found" });
 
   res.status(200).json({ brand });
 };
@@ -149,10 +149,10 @@ exports.updateBrand = async (req, res) => {
     where: { id: req.params.brand },
   });
 
-  if (!brand) return res.status(404).json({ error: "Brand not found" });
+  if (!brand) return res.status(404).json({ message: "Brand not found" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   if (!!tags && tags.length > 0)
     tags = tags.map((tag) =>
@@ -177,7 +177,7 @@ exports.updateBrand = async (req, res) => {
     },
   });
 
-  if (!owner) return res.status(400).json({ error: "Owner is not a user" });
+  if (!owner) return res.status(400).json({ message: "Owner is not a user" });
 
   owner = owner.id;
 
@@ -235,7 +235,7 @@ exports.favoriteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   const favorite = await prisma.favoriteBrand.upsert({
     where: {
@@ -272,7 +272,7 @@ exports.unfavoriteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   let favorite = await prisma.favoriteBrand.findFirst({
     where: {
@@ -282,7 +282,7 @@ exports.unfavoriteBrand = async (req, res) => {
   });
 
   if (!favorite)
-    return res.status(404).json({ error: "brand is not favorited" });
+    return res.status(404).json({ message: "brand is not favorited" });
 
   await prisma.favoriteBrand.delete({
     where: {
@@ -303,7 +303,7 @@ exports.upvoteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   const upvote = await prisma.brandVote.upsert({
     where: {
@@ -337,7 +337,7 @@ exports.downvoteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   const downvote = await prisma.brandVote.upsert({
     where: {
@@ -371,7 +371,7 @@ exports.unvoteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   const vote = await prisma.brandVote.findFirst({
     where: {
@@ -380,7 +380,7 @@ exports.unvoteBrand = async (req, res) => {
     },
   });
 
-  if (!vote) return res.status(404).json({ error: "brand not voted" });
+  if (!vote) return res.status(404).json({ message: "brand not voted" });
 
   await prisma.brandVote.delete({
     where: {
@@ -401,7 +401,7 @@ exports.subscribeToBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   let subscription = await prisma.brandSubscription.findFirst({
     where: {
@@ -411,7 +411,7 @@ exports.subscribeToBrand = async (req, res) => {
   });
 
   if (subscription)
-    return res.status(400).json({ error: "Already subscribed" });
+    return res.status(400).json({ message: "Already subscribed" });
 
   subscription = await prisma.brandSubscription.create({
     data: {
@@ -444,7 +444,7 @@ exports.unsubscribeFromBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   const subscription = await prisma.brandSubscription.findFirst({
     where: {
@@ -453,7 +453,7 @@ exports.unsubscribeFromBrand = async (req, res) => {
     },
   });
 
-  if (!subscription) return res.status(400).json({ error: "Not subscribed" });
+  if (!subscription) return res.status(400).json({ message: "Not subscribed" });
 
   await prisma.brandSubscription.delete({
     where: {
@@ -471,12 +471,12 @@ exports.commentOnBrand = async (req, res) => {
     where: { id: req.params.brand },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
-  if (!content) return res.status(400).json({ error: "Comment required" });
+  if (!content) return res.status(400).json({ message: "Comment required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   tags = tags.map((tag) =>
     tag
@@ -518,13 +518,13 @@ exports.commentOnComment = async (req, res) => {
     where: { id: req.params.brand },
   });
 
-  if (!brand) return res.status(404).json({ error: "brand not found" });
+  if (!brand) return res.status(404).json({ message: "brand not found" });
 
   if (!content || content == null)
-    return res.status(400).json({ error: "Content required" });
+    return res.status(400).json({ message: "Content required" });
 
   if (tags && !Array.isArray(tags))
-    return res.status(400).json({ error: "Tags must be an array" });
+    return res.status(400).json({ message: "Tags must be an array" });
 
   tags = tags.map((tag) =>
     tag
@@ -537,7 +537,7 @@ exports.commentOnComment = async (req, res) => {
     where: { id: req.params.comment },
   });
 
-  if (!comment) return res.status(402).json({ error: "Comment not found" });
+  if (!comment) return res.status(402).json({ message: "Comment not found" });
 
   comment = await prisma.comment.create({
     data: {
@@ -567,7 +567,7 @@ exports.getBrandComment = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "No brand found" });
+  if (!brand) return res.status(404).json({ message: "No brand found" });
 
   const comments = await prisma.comment.findMany({
     where: {
@@ -585,7 +585,7 @@ exports.deleteComment = async (req, res) => {
     },
   });
 
-  if (!comment) return res.status(404).json({ error: "Comment not found" });
+  if (!comment) return res.status(404).json({ message: "Comment not found" });
 
   comment = await prisma.comment.delete({
     where: { id: req.params.comment, authorId: req.user.id },
@@ -604,7 +604,7 @@ exports.deleteBrand = async (req, res) => {
     },
   });
 
-  if (!brand) return res.status(404).json({ error: "Brand not found" });
+  if (!brand) return res.status(404).json({ message: "Brand not found" });
 
   await prisma.brand.delete({
     where: {
