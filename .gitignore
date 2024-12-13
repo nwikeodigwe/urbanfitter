@@ -2,5 +2,5 @@
 /backend/dist
 /backend/coverage
 
-/backend/*.env
+/backend/*.env*
 /backend/*.log
