@@ -32,4 +32,4 @@ jobs:
         echo "NODE_ENV=test" > .env.test
         echo "DATABASE_URL=file:./test.db" >> .env.test
         echo "JWT_SECRET=4524435552432" >> .env.test
-        npx jest
+        npm run test
