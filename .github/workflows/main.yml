@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run test
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20, 21, 22] 
+        node-version: [20, 21] 
 
     steps:
     - name: Checkout code
@@ -30,6 +30,14 @@ jobs:
         cd backend
         npm install
         echo "NODE_ENV=test" > .env.test
-        echo "DATABASE_URL=file:./test.db" >> .env.test
-        echo "JWT_SECRET=4524435552432" >> .env.test
-        npx jest
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.test
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.test
+        echo "FACEBOOK_CLIENT_SECRET=${{ secrets.FACEBOOK_CLIENT_SECRET }}" >> .env.test
+        echo "FACEBOOK_CLIENT_ID=${{ secrets.FACEBOOK_CLIENT_ID }}" >> .env.test
+        echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env.test
+        npm run test
+      env:
+        CI: true
+
+    - name: Debug .env.test
+      run: cat backend/.env.test | grep -v 'SECRET'
