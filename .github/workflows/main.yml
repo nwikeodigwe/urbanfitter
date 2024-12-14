@@ -1,4 +1,4 @@
-name: Run test
+name: Relay app pipeline
 
 on:
   push:
@@ -6,16 +6,34 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      - main  
+  workflow_dispatch:
 
 jobs:
-  test:
+  
+  build-and-test:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [20, 21] 
+        
+    services:
+      mysql:
+        image: mysql:latest
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_PASSWORD }}
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u${MYSQL_USER} -p${MYSQL_PASSWORD}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
+    env:
+        CI: true
+           
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -25,19 +43,25 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Wait for MySQL to be ready
+      run: |
+        until mysqladmin ping -h 127.0.0.1 -u${{ secrets.MYSQL_USER }} -p${{ secrets.MYSQL_PASSWORD }} --silent; do
+          echo "Waiting for database connection..."
+          sleep 2
+        done
+
     - name: Install dependencies and run tests
+      env:
+        NODE_ENV: test
+        DATABASE_URL: "mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:${{ secrets.MYSQL_PORT }}/${{ secrets.MYSQL_DB }}"
+        FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
+        FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
       run: |
         cd backend
         npm install
-        echo "NODE_ENV=test" > .env.test
-        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.test
-        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.test
-        echo "FACEBOOK_CLIENT_SECRET=${{ secrets.FACEBOOK_CLIENT_SECRET }}" >> .env.test
-        echo "FACEBOOK_CLIENT_ID=${{ secrets.FACEBOOK_CLIENT_ID }}" >> .env.test
-        echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env.test
-        npm run test
-      env:
-        CI: true
+        npx jest --verbose
+      
 
-    - name: Debug .env.test
-      run: cat backend/.env.test | grep -v 'SECRET'
+
