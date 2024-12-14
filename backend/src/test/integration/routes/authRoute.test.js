@@ -2,7 +2,6 @@ const request = require("supertest");
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs/dist/bcrypt");
 const app = require("../../../app");
-const { create } = require("handlebars");
 let server;
 
 const prisma = new PrismaClient();
@@ -19,28 +18,34 @@ describe("Auth route", () => {
     });
   };
 
-  beforeAll(async () => {
-    server = app.listen(0, () => {
-      const port = server.address().port;
+  const createToken = () => {
+    return prisma.reset.create({
+      data: {
+        token: "token",
+        expires: new Date(Date.now() - 600000),
+        user: { connect: { email: user.email } },
+      },
     });
+  };
+
+  beforeEach(async () => {
+    server = app.listen(0, () => {
+      server.address().port;
+    });
+
+    user = {
+      email: "test@email.com",
+      password: "password",
+    };
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await prisma.user.deleteMany();
     await prisma.$disconnect();
     await server.close();
   });
 
   describe("POST /signup", () => {
-    beforeEach(async () => {
-      user = {
-        email: "test@email.com",
-        password: "password",
-      };
-
-      await createUser();
-    });
-
     afterEach(async () => {
       await prisma.user.deleteMany();
     });
@@ -53,6 +58,7 @@ describe("Auth route", () => {
     });
 
     it("Should return 400 if user already exists", async () => {
+      await createUser();
       const res = await request(server).post("/api/auth/signup").send(user);
 
       expect(res.status).toBe(400);
@@ -66,15 +72,6 @@ describe("Auth route", () => {
   });
 
   describe("POST /signin", () => {
-    beforeEach(async () => {
-      user = {
-        email: "test@email.com",
-        password: "password",
-      };
-
-      await createUser();
-    });
-
     afterEach(async () => {
       await prisma.user.deleteMany();
     });
@@ -94,6 +91,7 @@ describe("Auth route", () => {
     });
 
     it("Should return 400 if password is invalid", async () => {
+      await createUser();
       user.password = "invalidpassword";
       const res = await request(server).post("/api/auth/signin").send(user);
 
@@ -101,6 +99,7 @@ describe("Auth route", () => {
     });
 
     it("Should return 200 if user is found", async () => {
+      await createUser();
       const res = await request(server).post("/api/auth/signin").send(user);
 
       expect(res.status).toBe(200);
@@ -108,13 +107,6 @@ describe("Auth route", () => {
   });
 
   describe("POST /reset", () => {
-    beforeEach(async () => {
-      user = {
-        email: "test@email.com",
-        password: "password",
-      };
-    });
-
     afterEach(async () => {
       await prisma.user.deleteMany();
     });
@@ -141,30 +133,8 @@ describe("Auth route", () => {
   });
 
   describe("POST /reset/:token", () => {
-    function createToken(userId, expires = new Date()) {
-      return prisma.reset.create({
-        data: {
-          token: "token",
-          expires,
-          userId,
-        },
-      });
-    }
-
-    beforeEach(async () => {
-      user = {
-        email: "test@email.com",
-        password: "password",
-      };
-    });
-
     afterEach(async () => {
-      user = {
-        email: "test@email.com",
-        password: "password",
-      };
       await prisma.user.deleteMany();
-      await prisma.reset.deleteMany();
     });
 
     it("should return 400 if token and password is undefined", async () => {
@@ -175,8 +145,7 @@ describe("Auth route", () => {
     });
 
     it("should return 400 if token is invalid", async () => {
-      const createdUser = await createUser();
-      await createToken(createdUser.id);
+      user = await createUser();
       const res = await request(server)
         .post("/api/auth/reset/invalidtoken")
         .send(user);
@@ -185,8 +154,8 @@ describe("Auth route", () => {
     });
 
     it("should return 400 if token is expired", async () => {
-      const createdUser = await createUser();
-      createToken(createdUser.id, new Date(Date.now() - 600000));
+      user = await createUser();
+      createToken();
       res = await request(server).post("/api/auth/reset/token").send(user);
 
       expect(res.status).toBe(400);

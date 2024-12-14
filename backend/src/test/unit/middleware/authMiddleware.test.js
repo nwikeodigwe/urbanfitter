@@ -3,13 +3,37 @@ const auth = require("../../../middleware/auth");
 const jwt = require("jsonwebtoken");
 
 describe("Auth middleware", () => {
+  let user;
+  let token;
+  let req;
+  let res;
+  let next;
+
+  beforeEach(() => {
+    user = {
+      id: 1,
+      name: "test",
+      email: "test@example.com",
+    };
+
+    token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    req = {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    };
+
+    res = {
+      status: jest.fn(() => res),
+      json: jest.fn(),
+    };
+
+    next = jest.fn();
+  });
   it("Should return 401 if no token is provided", () => {
     const req = {
       headers: {},
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
     };
     const next = jest.fn();
 
@@ -20,16 +44,7 @@ describe("Auth middleware", () => {
   });
 
   it("Should return 403 if token is invalid", () => {
-    const req = {
-      headers: {
-        authorization: "Bearer invalidtoken",
-      },
-    };
-    const res = {
-      status: jest.fn(() => res),
-      json: jest.fn(),
-    };
-    const next = jest.fn();
+    req = { headers: { authorization: "Bearer invalidtoken" } };
 
     auth(req, res, next);
 
@@ -37,21 +52,7 @@ describe("Auth middleware", () => {
   });
 
   it("Should populate req.user with the payload of a valid JWT", () => {
-    const user = {
-      id: 1,
-      name: "test",
-      email: "test@example.com",
-    };
-    const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-    const req = {
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-    };
-
-    const res = {};
-    const next = jest.fn();
+    res = {};
 
     auth(req, res, next);
 
