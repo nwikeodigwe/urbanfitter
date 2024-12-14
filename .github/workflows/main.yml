@@ -50,6 +50,10 @@ jobs:
           sleep 2
         done
 
+    - name: Create test database
+      run: |
+        mysql -h 127.0.0.1 -u${{ secrets.MYSQL_USER }} -p${{ secrets.MYSQL_PASSWORD }} -e "CREATE DATABASE IF NOT EXISTS ${{ secrets.MYSQL_DB }};"
+
     - name: Install dependencies and run tests
       env:
         NODE_ENV: test
@@ -61,7 +65,7 @@ jobs:
       run: |
         cd backend
         npm install
-        npx jest --verbose
+        npx jest --verbose --runInBand
       
 
 
