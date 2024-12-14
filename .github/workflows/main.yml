@@ -1,4 +1,4 @@
-name: Relay app pipeline
+name: Relay app CI pipeline
 
 on:
   push:
