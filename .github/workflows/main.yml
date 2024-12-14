@@ -54,6 +54,11 @@ jobs:
       run: |
         mysql -h 127.0.0.1 -u${{ secrets.MYSQL_USER }} -p${{ secrets.MYSQL_PASSWORD }} -e "CREATE DATABASE IF NOT EXISTS ${{ secrets.MYSQL_DB }};"
 
+    - name: Run migration
+      run: |
+        npx prisma generate
+        npx prisma migrate dev
+
     - name: Install dependencies and run tests
       env:
         NODE_ENV: test
