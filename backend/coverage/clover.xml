@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1734148314056" clover="3.2.0">
-  <project timestamp="1734148314056" name="All files">
-    <metrics statements="748" coveredstatements="692" conditionals="391" coveredconditionals="310" methods="110" coveredmethods="95" elements="1249" coveredelements="1097" complexity="0" loc="748" ncloc="748" packages="9" files="23" classes="23"/>
+<coverage generated="1734148846429" clover="3.2.0">
+  <project timestamp="1734148846429" name="All files">
+    <metrics statements="741" coveredstatements="689" conditionals="391" coveredconditionals="310" methods="107" coveredmethods="95" elements="1239" coveredelements="1094" complexity="0" loc="741" ncloc="741" packages="9" files="23" classes="23"/>
     <package name="src">
       <metrics statements="12" coveredstatements="9" conditionals="4" coveredconditionals="1" methods="1" coveredmethods="0"/>
       <file name="app.js" path="C:\Users\nwike\relayapp\backend\src\app.js">
@@ -21,22 +21,15 @@
       </file>
     </package>
     <package name="src.auth">
-      <metrics statements="13" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="0"/>
+      <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="passport.js" path="C:\Users\nwike\relayapp\backend\src\auth\passport.js">
-        <metrics statements="13" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="0"/>
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="6" type="stmt"/>
         <line num="2" count="6" type="stmt"/>
         <line num="4" count="6" type="stmt"/>
         <line num="5" count="6" type="stmt"/>
         <line num="6" count="6" type="stmt"/>
         <line num="8" count="6" type="stmt"/>
-        <line num="10" count="6" type="stmt"/>
-        <line num="17" count="0" type="stmt"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="51" count="6" type="stmt"/>
-        <line num="52" count="0" type="stmt"/>
-        <line num="55" count="6" type="stmt"/>
-        <line num="56" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.config">

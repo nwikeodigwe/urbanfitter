@@ -7,25 +7,25 @@ const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
-passport.use(
-  new FacebookStrategy(config, async function (
-    accessToken,
-    refreshToken,
-    profile,
-    cb
-  ) {
-    const user = await prisma.user.findOrCreate({
-      where: { email: profile.emails[0].value },
-      defaults: {
-        social: profile.id,
-        username: profile.displayName,
-        email: profile.emails[0].value,
-      },
-    });
+// passport.use(
+//   new FacebookStrategy(config, async function (
+//     accessToken,
+//     refreshToken,
+//     profile,
+//     cb
+//   ) {
+//     const user = await prisma.user.findOrCreate({
+//       where: { email: profile.emails[0].value },
+//       defaults: {
+//         social: profile.id,
+//         username: profile.displayName,
+//         email: profile.emails[0].value,
+//       },
+//     });
 
-    return cb(null, user);
-  })
-);
+//     return cb(null, user);
+//   })
+// );
 
 // passport.use(
 //   new LocalStrategy(
@@ -48,10 +48,10 @@ passport.use(
 //   )
 // );
 
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
+// passport.serializeUser((user, done) => {
+//   done(null, user);
+// });
 
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
-});
+// passport.deserializeUser((obj, done) => {
+//   done(null, obj);
+// });
