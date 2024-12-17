@@ -164,6 +164,48 @@ exports.updateProfile = async (req, res) => {
   return res.status(200).json(profile);
 };
 
+exports.getUserStyle = async (req, res) => {
+  let user = await prisma.user.findFirst({
+    where: {
+      id: req.params.user,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  let style = await prisma.style.findMany({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  return res.status(200).json({ style });
+};
+
+exports.getUserCollection = async (req, res) => {
+  let user = await prisma.user.findFirst({
+    where: {
+      id: req.params.user,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  let collection = await prisma.collection.findMany({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  return res.status(200).json({ collection });
+};
+
 exports.updatePassword = async (req, res) => {
   const { password, newpassword } = req.body;
 

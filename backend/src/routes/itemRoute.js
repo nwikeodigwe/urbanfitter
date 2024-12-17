@@ -3,24 +3,24 @@ const auth = require("../middleware/auth");
 const itemController = require("../controllers/itemController");
 const router = express.Router();
 
-router.post("/", [auth], itemController.createItem);
+router.post("/", itemController.createItem);
 
-router.get("/", [auth], itemController.getItem);
+router.get("/", itemController.getItem);
 
-router.get("/:item", [auth], itemController.getItemById);
+router.get("/:item", itemController.getItemById);
 
-router.post("/:item/favorite", [auth], itemController.favoriteItem);
+router.post("/:item/favorite", itemController.favoriteItem);
 
-router.delete("/:item/unfavorite", [auth], itemController.unfavoriteItem);
+router.delete("/:item/unfavorite", itemController.unfavoriteItem);
 
-router.put("/:item/upvote", [auth], itemController.upvoteItem);
+router.put("/:item/upvote", itemController.upvoteItem);
 
-router.put("/:item/downvote", [auth], itemController.downvoteItem);
+router.put("/:item/downvote", itemController.downvoteItem);
 
-router.delete("/:item/unvote", [auth], itemController.unvoteItem);
+router.delete("/:item/unvote", itemController.unvoteItem);
 
-router.patch("/:item", [auth], itemController.updateItem);
+router.patch("/:item", itemController.updateItem);
 
-router.delete("/:item", [auth], itemController.deleteItem);
+router.delete("/:item", itemController.deleteItem);
 
 module.exports = router;

@@ -3,44 +3,36 @@ const auth = require("../middleware/auth");
 const brandController = require("../controllers/brandController");
 const router = express.Router();
 
-router.post("/", [auth], brandController.createBrand);
+router.post("/", brandController.createBrand);
 
-router.get("/", [auth], brandController.getAllBrands);
+router.get("/", brandController.getAllBrands);
 
-router.get("/:brand", [auth], brandController.getBrandById);
+router.get("/:brand", brandController.getBrandById);
 
-router.patch("/:brand", [auth], brandController.updateBrand);
+router.patch("/:brand", brandController.updateBrand);
 
-router.post("/:brand/favorite", [auth], brandController.favoriteBrand);
+router.post("/:brand/favorite", brandController.favoriteBrand);
 
-router.delete("/:brand/unfavorite", [auth], brandController.unfavoriteBrand);
+router.delete("/:brand/unfavorite", brandController.unfavoriteBrand);
 
-router.put("/:brand/upvote", [auth], brandController.upvoteBrand);
+router.put("/:brand/upvote", brandController.upvoteBrand);
 
-router.put("/:brand/downvote", [auth], brandController.downvoteBrand);
+router.put("/:brand/downvote", brandController.downvoteBrand);
 
-router.delete("/:brand/unvote", [auth], brandController.unvoteBrand);
+router.delete("/:brand/unvote", brandController.unvoteBrand);
 
-router.post("/:brand/subscribe", [auth], brandController.subscribeToBrand);
+router.post("/:brand/subscribe", brandController.subscribeToBrand);
 
-router.delete(
-  "/:brand/unsubscribe",
-  [auth],
-  brandController.unsubscribeFromBrand
-);
+router.delete("/:brand/unsubscribe", brandController.unsubscribeFromBrand);
 
-router.post("/:brand/comment", [auth], brandController.commentOnBrand);
+router.post("/:brand/comment", brandController.commentOnBrand);
 
-router.post(
-  "/:brand/comment/:comment",
-  [auth],
-  brandController.commentOnComment
-);
+router.post("/:brand/comment/:comment", brandController.commentOnComment);
 
-router.get("/:brand/comments", [auth], brandController.getBrandComment);
+router.get("/:brand/comments", brandController.getBrandComment);
 
-router.delete("/comment/:comment", [auth], brandController.deleteComment);
+router.delete("/comment/:comment", brandController.deleteComment);
 
-router.delete("/:brand", [auth], brandController.deleteBrand);
+router.delete("/:brand", brandController.deleteBrand);
 
 module.exports = router;

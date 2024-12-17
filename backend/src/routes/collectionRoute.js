@@ -3,50 +3,29 @@ const auth = require("../middleware/auth");
 const collectionController = require("../controllers/collectionController");
 const router = express.Router();
 
-router.post("/", [auth], collectionController.createCollection);
+router.post("/", collectionController.createCollection);
 
-router.get("/", [auth], collectionController.getCollections);
+router.get("/", collectionController.getCollections);
 
-router.get("/:collection", [auth], collectionController.getCollectionById);
+router.get("/:collection", collectionController.getCollectionById);
 
-router.get(
-  "/:collection/styles",
-  [auth],
-  collectionController.getCollectionStyles
-);
+router.get("/:collection/styles", collectionController.getCollectionStyles);
 
-router.post(
-  "/:collection/favorite",
-  [auth],
-  collectionController.favoriteCollection
-);
+router.post("/:collection/favorite", collectionController.favoriteCollection);
 
 router.delete(
   "/:collection/unfavorite",
-  [auth],
   collectionController.unfavoriteCollection
 );
 
-router.put(
-  "/:collection/upvote",
-  [auth],
-  collectionController.upvoteCollection
-);
+router.put("/:collection/upvote", collectionController.upvoteCollection);
 
-router.put(
-  "/:collection/downvote",
-  [auth],
-  collectionController.downvoteCollection
-);
+router.put("/:collection/downvote", collectionController.downvoteCollection);
 
-router.delete(
-  "/:collection/unvote",
-  [auth],
-  collectionController.unvoteCollection
-);
+router.delete("/:collection/unvote", collectionController.unvoteCollection);
 
-router.patch("/:collection", [auth], collectionController.updateCollection);
+router.patch("/:collection", collectionController.updateCollection);
 
-router.delete("/:collection", [auth], collectionController.deleteCollection);
+router.delete("/:collection", collectionController.deleteCollection);
 
 module.exports = router;

@@ -1,22 +1,25 @@
 const express = require("express");
-const auth = require("../middleware/auth");
 const userController = require("../controllers/userController");
 const router = express.Router();
 
-router.get("/", [auth], userController.getAllUsers);
+router.get("/", userController.getAllUsers);
 
-router.post("/:user/subscribe", [auth], userController.subscribeToUser);
+router.post("/:user/subscribe", userController.subscribeToUser);
 
-router.delete("/:user/unsubscribe", [auth], userController.unsubscribeFromUser);
+router.delete("/:user/unsubscribe", userController.unsubscribeFromUser);
 
-router.get("/me", [auth], userController.getUser);
+router.get("/me", userController.getUser);
 
-router.patch("/me", [auth], userController.updateUser);
+router.get("/:user/style", userController.getUserStyle);
 
-router.patch("/profile", [auth], userController.updateProfile);
+router.get("/:user/collection", userController.getUserCollection);
 
-router.patch("/password", [auth], userController.updatePassword);
+router.patch("/me", userController.updateUser);
 
-router.get("/:user", [auth], userController.getUserById);
+router.patch("/profile", userController.updateProfile);
+
+router.patch("/password", userController.updatePassword);
+
+router.get("/:user", userController.getUserById);
 
 module.exports = router;

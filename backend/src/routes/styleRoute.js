@@ -3,15 +3,15 @@ const auth = require("../middleware/auth");
 const styleController = require("../controllers/styleController");
 const router = express.Router();
 
-router.post("/", [auth], styleController.createStyle);
+router.post("/", styleController.createStyle);
 
-router.get("/", [auth], styleController.getAllStyle);
+router.get("/", styleController.getAllStyle);
 
-router.get("/me", [auth], styleController.getStyle);
+router.get("/me", styleController.getStyle);
 
-router.get("/:style", [auth], styleController.getStyleById);
+router.get("/:style", styleController.getStyleById);
 
-router.post("/:style/comment", [auth], styleController.createComment);
+router.post("/:style/comment", styleController.createComment);
 
 router.post(
   "/:style/comment/:comment",
@@ -19,26 +19,26 @@ router.post(
   styleController.createCommentComment
 );
 
-router.get("/:style/comments", [auth], styleController.getStyleComment);
+router.get("/:style/comments", styleController.getStyleComment);
 
-router.delete("/comment/:comment", [auth], styleController.deleteComment);
+router.delete("/comment/:comment", styleController.deleteComment);
 
-router.patch("/:style", [auth], styleController.updateStyle);
+router.patch("/:style", styleController.updateStyle);
 
-router.post("/:style/favorite", [auth], styleController.favoriteStyle);
+router.post("/:style/favorite", styleController.favoriteStyle);
 
-router.delete("/:style/unfavorite", [auth], styleController.unfavoriteStyle);
+router.delete("/:style/unfavorite", styleController.unfavoriteStyle);
 
-router.put("/:style/upvote", [auth], styleController.upvoteStyle);
+router.put("/:style/upvote", styleController.upvoteStyle);
 
-router.put("/:style/downvote", [auth], styleController.downvoteStyle);
+router.put("/:style/downvote", styleController.downvoteStyle);
 
-router.delete("/:style/unvote", [auth], styleController.unvoteStyle);
+router.delete("/:style/unvote", styleController.unvoteStyle);
 
-router.patch("/:style/publish", [auth], styleController.publishStyle);
+router.patch("/:style/publish", styleController.publishStyle);
 
-router.patch("/:style/unpublish", [auth], styleController.unpublishStyle);
+router.patch("/:style/unpublish", styleController.unpublishStyle);
 
-router.delete("/:style", [auth], styleController.deleteStyle);
+router.delete("/:style", styleController.deleteStyle);
 
 module.exports = router;
