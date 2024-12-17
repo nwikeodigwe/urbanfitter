@@ -182,6 +182,8 @@ exports.getUserStyle = async (req, res) => {
     },
   });
 
+  if (!style.length) return res.status(404).json({ message: "No style found" });
+
   return res.status(200).json({ style });
 };
 
@@ -202,6 +204,9 @@ exports.getUserCollection = async (req, res) => {
       userId: user.id,
     },
   });
+
+  if (!collection.length)
+    return res.status(404).json({ message: "No collection found" });
 
   return res.status(200).json({ collection });
 };

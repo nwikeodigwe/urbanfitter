@@ -27,6 +27,46 @@ describe("User route", () => {
     });
   };
 
+  const createStyle = async (collectionId) => {
+    const stle = await prisma.style.create({
+      data: {
+        name: style.name,
+        description: style.description,
+        tags: {
+          connectOrCreate: style.tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+        collection: { connect: { id: collectionId } },
+        author: { connect: { email: user.email } },
+      },
+    });
+
+    return stle.id;
+  };
+
+  const createCollection = async () => {
+    const collect = await prisma.collection.create({
+      data: {
+        name: collection.name,
+        description: collection.description,
+        tags: {
+          connectOrCreate: collection.tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+        author: { connect: { email: user.email } },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return collect.id;
+  };
+
   const createSubscription = () => {
     return prisma.userSubscription.create({
       data: {
@@ -47,9 +87,24 @@ describe("User route", () => {
       email: "test@email.com",
       password: "password",
     };
+
     user2 = {
       email: "test2@email.com",
     };
+
+    style = {
+      name: "name",
+      description: "description",
+      tags: ["tag1", "tag2"],
+      collection: "collectionId",
+    };
+
+    collection = {
+      name: "name",
+      description: "description",
+      tags: ["tag1", "tag2"],
+    };
+
     token = await auth();
     header = { authorization: `Bearer ${token}` };
   });
@@ -90,24 +145,27 @@ describe("User route", () => {
   describe("POST /:user/subscribe", () => {
     it("Should return 404 if user not found", async () => {
       const res = await request(server)
-        .post(`/api/user/cm431qxul0007hgi64pcv9mzz/subscribe`)
+        .post(`/api/user/userId/subscribe`)
         .set(header);
       expect(res.status).toBe(404);
     });
 
     it("Should return 400 if already subscribed", async () => {
-      const newUser = await createUser();
+      user.email = user2.email;
+      user = await createUser();
+      user.email = "test@email.com";
       await createSubscription();
       const res = await request(server)
-        .post(`/api/user/${newUser.id}/subscribe`)
+        .post(`/api/user/${user.id}/subscribe`)
         .set(header);
+
       expect(res.status).toBe(400);
     });
 
     it("Should return 201 if subscription successful", async () => {
-      const newUser = await createUser();
+      user = await createUser();
       const res = await request(server)
-        .post(`/api/user/${newUser.id}/subscribe`)
+        .post(`/api/user/${user.id}/subscribe`)
         .set(header);
       expect(res.status).toBe(201);
     });
@@ -122,18 +180,18 @@ describe("User route", () => {
     });
 
     it("Should return 400 if not subscribed", async () => {
-      const newUser = await createUser();
+      const user = await createUser();
       const res = await request(server)
-        .delete(`/api/user/${newUser.id}/unsubscribe`)
+        .delete(`/api/user/${user.id}/unsubscribe`)
         .set(header);
       expect(res.status).toBe(400);
     });
 
     it("Should return 200 if unsubscribed", async () => {
-      const newUser = await createUser();
+      const user = await createUser();
       await createSubscription();
       const res = await request(server)
-        .delete(`/api/user/${newUser.id}/unsubscribe`)
+        .delete(`/api/user/${user.id}/unsubscribe`)
         .set(header);
       expect(res.status).toBe(200);
     });
@@ -149,6 +207,57 @@ describe("User route", () => {
     it("should return 200 if user exist", async () => {
       const res = await request(server).get("/api/user/me").set(header);
       expect(res.status).toBe(200);
+    });
+  });
+
+  describe("GET /:user/style", () => {
+    it("should return 404 if user not found", async () => {
+      const res = await request(server).get("/api/userId/style").set(header);
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 404 if no style found", async () => {
+      user = await createUser();
+      const res = await request(server)
+        .get(`/api/${user.id}/style`)
+        .set(header);
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 200 if style found", async () => {
+      user = await createUser();
+      collection = await createCollection();
+      await createStyle(collection);
+      const res = await request(server)
+        .get(`/api/${user.id}/style`)
+        .set(header);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("GET /:user/collection", () => {
+    it("should return 404 if user not found", async () => {
+      const res = await request(server)
+        .get("/api/userId/collection")
+        .set(header);
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 404 if no collection found", async () => {
+      user = await createUser();
+      const res = await request(server)
+        .get(`/api/${user.id}/collection`)
+        .set(header);
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 200 if style found", async () => {
+      user = await createUser();
+      await createCollection();
+      const res = await request(server)
+        .get(`/api/${user.id}/collection`)
+        .set(header);
+      expect(res.status).toBe(404);
     });
   });
 
