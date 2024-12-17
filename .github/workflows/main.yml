@@ -46,7 +46,7 @@ jobs:
     - name: Wait for MySQL to be ready
       run: |
         until mysqladmin ping -h 127.0.0.1 -u${{ secrets.MYSQL_USER }} -p${{ secrets.MYSQL_PASSWORD }} --silent; do
-          echo "Waiting for database connection..."
+          echo "Waiting for database to connect..."
           sleep 2
         done
 
