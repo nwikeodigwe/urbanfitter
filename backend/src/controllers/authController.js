@@ -63,34 +63,18 @@ exports.facebookCallback = (req, res) => {
 };
 
 exports.reset = async (req, res) => {
-  let { email } = req.body;
+  if (!req.body.email)
+    return res.status(400).json({ message: "Email required" });
 
-  if (!email) return res.status(400).json({ message: "Email required" });
+  let user = new User();
+  user.email = req.body.email;
+  let usr = await user.find();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
+  if (!usr) return res.status(404).json({ message: "User not found" });
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  await user.reset();
 
-  await prisma.reset.updateMany({
-    where: { user: { id: user.id }, expires: { lte: new Date() } },
-    data: { expires: new Date() },
-  });
-
-  const salt = await bcrypt.genSalt(10);
-  const token = salt.substr(20);
-
-  const reset = await prisma.reset.create({
-    data: {
-      token: token.toString(),
-      expires: new Date(Date.now() + 600000),
-      user: { connect: { id: user.id } },
-    },
-  });
-
-  res.status(200).json({ reset });
+  res.status(200).end();
 };
 
 exports.resetToken = async (req, res) => {

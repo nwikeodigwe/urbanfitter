@@ -122,10 +122,9 @@ describe("Auth route", () => {
       expect(res.status).toBe(404);
     });
 
-    it("should return 200 if user is found", async () => {
+    it("should return 200 if reset successful", async () => {
       await createUser();
       const res = await request(server).post("/api/auth/reset").send(user);
-
       expect(res.status).toBe(200);
     });
   });

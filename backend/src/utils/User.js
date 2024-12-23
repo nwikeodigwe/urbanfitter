@@ -98,6 +98,24 @@ class User {
     });
   }
 
+  async #getId() {
+    const name = this.name;
+    const email = this.email;
+
+    const filters = [name && { name }, email && { email }].filter(Boolean);
+
+    if (filters.length === 0) {
+      throw new Error("At least one of name, or email must be provided");
+    }
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: filters,
+      },
+      select: { id: true },
+    });
+    return user.id;
+  }
+
   async #getPassword() {
     const id = this.id;
     const email = this.email;
@@ -164,6 +182,24 @@ class User {
     });
 
     return mail.send(type[template].template);
+  }
+
+  async reset() {
+    await prisma.reset.updateMany({
+      where: { user: { email: this.email }, expires: { lte: new Date() } },
+      data: { expires: new Date() },
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    const token = salt.substr(20);
+
+    await prisma.reset.create({
+      data: {
+        token: token.toString(),
+        expires: new Date(Date.now() + 600000),
+        user: { connect: { email: this.email } },
+      },
+    });
   }
 
   delete() {
