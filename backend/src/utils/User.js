@@ -50,7 +50,7 @@ class User {
       select: this.selectedFields,
     });
     this.id = usr.id;
-    return;
+    return usr;
   }
 
   find(user = {}) {
