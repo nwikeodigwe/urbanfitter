@@ -72,50 +72,28 @@ exports.reset = async (req, res) => {
 
   if (!usr) return res.status(404).json({ message: "User not found" });
 
-  await user.reset();
+  await user.createResetToken();
 
   res.status(200).end();
 };
 
 exports.resetToken = async (req, res) => {
-  let { token } = req.params;
-  let { password } = req.body;
-
-  if (!token || !password)
+  if (!req.params.token || !req.body.password)
     return res.status(400).json({ message: "Token and password required" });
 
-  const reset = await prisma.reset.findUnique({
-    where: { token },
-    include: { user: true },
-  });
+  let user = new User();
+  user.resetToken = req.params.token;
 
-  if (!reset) return res.status(400).json({ message: "Invalid token" });
+  const isValidResetToken = await user.isValidResetToken();
 
-  if (reset.expires < new Date())
-    return res.status(400).json({ message: "Token expired" });
+  if (!isValidResetToken)
+    return res.status(400).json({ message: "Invalid reset token" });
 
-  const salt = await bcrypt.genSalt(10);
-  password = await bcrypt.hash(password, salt);
+  user.password = req.body.password;
 
-  await prisma.user.update({
-    where: { id: reset.user.id },
-    data: { password },
-  });
+  await user.save();
 
-  await prisma.reset.update({
-    where: { token },
-    data: { expires: new Date() },
-  });
-
-  token = jwt.sign(
-    {
-      id: reset.user.id,
-      username: reset.user.name,
-      email: reset.user.email,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  token = await user.createToken();
 
   res.status(200).json({ token });
 };

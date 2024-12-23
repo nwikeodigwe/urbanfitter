@@ -13,6 +13,7 @@ class User {
     this.name = user.name || null;
     this.email = user.email || null;
     this.password = user.password || null;
+    this.resetToken = user.resetToken || null;
 
     this.selectedFields = {
       id: true,
@@ -21,7 +22,7 @@ class User {
     };
   }
 
-  save(user = {}) {
+  async save(user = {}) {
     const name = user.name || this.name;
     const email = user.email || this.email;
     const password = user.password || this.password;
@@ -44,10 +45,12 @@ class User {
       });
     }
 
-    return prisma.user.create({
+    const usr = await prisma.user.create({
       data: userData,
       select: this.selectedFields,
     });
+    this.id = usr.id;
+    return;
   }
 
   find(user = {}) {
@@ -184,7 +187,7 @@ class User {
     return mail.send(type[template].template);
   }
 
-  async reset() {
+  async createResetToken() {
     await prisma.reset.updateMany({
       where: { user: { email: this.email }, expires: { lte: new Date() } },
       data: { expires: new Date() },
@@ -200,6 +203,17 @@ class User {
         user: { connect: { email: this.email } },
       },
     });
+  }
+
+  async isValidResetToken() {
+    const reset = await prisma.reset.findUnique({
+      where: { token: this.resetToken },
+      select: { id: true },
+    });
+
+    if (!reset) return false;
+
+    if (reset.expires < new Date()) return false;
   }
 
   delete() {
