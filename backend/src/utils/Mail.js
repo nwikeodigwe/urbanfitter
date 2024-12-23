@@ -41,7 +41,7 @@ class Mail {
 
   async send(emailTemplate) {
     try {
-      const result = await this.resend.emails.send({
+      await this.resend.emails.send({
         from: this.from,
         to: this.to,
         subject: this.subject,

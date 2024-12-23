@@ -1,14 +1,11 @@
-const bcrypt = require("bcryptjs");
 const User = require("../utils/User");
-const _ = require("lodash");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
 exports.getAllUsers = async (req, res) => {
-  let users = new User();
-
-  users = await users.findMany();
+  let user = new User();
+  let users = await user.findMany();
 
   if (users.length == 1)
     return res.status(404).json({ message: "No user found" });
@@ -18,8 +15,8 @@ exports.getAllUsers = async (req, res) => {
 
 exports.subscribeToUser = async (req, res) => {
   let user = new User();
-
-  user = await user.findById(req.params.user);
+  user.id = req.params.user;
+  user = await user.findById();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -55,18 +52,11 @@ exports.subscribeToUser = async (req, res) => {
 };
 
 exports.unsubscribeFromUser = async (req, res) => {
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { id: req.params.user },
-        { name: req.params.user },
-        { email: req.params.user },
-      ],
-    },
-    select: {
-      id: true,
-    },
-  });
+  let user = new User();
+  user.id = req.params.user;
+  user.name = req.params.user;
+  user.email = req.params.user;
+  user = await user.find();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -102,8 +92,10 @@ exports.updateUser = async (req, res) => {
   const { name, email } = req.body;
   let user = new User();
   user.id = req.user.id;
+  user.name = name;
+  user.email = email;
 
-  user = await user.update({ name, email });
+  user = await user.save();
 
   res.status(200).json(user);
 };
@@ -132,14 +124,9 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.getUserStyle = async (req, res) => {
-  let user = await prisma.user.findFirst({
-    where: {
-      id: req.params.user,
-    },
-    select: {
-      id: true,
-    },
-  });
+  let user = new User();
+  user.id = req.params.user;
+  user = await user.findById();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -155,14 +142,9 @@ exports.getUserStyle = async (req, res) => {
 };
 
 exports.getUserCollection = async (req, res) => {
-  let user = await prisma.user.findFirst({
-    where: {
-      id: req.params.user,
-    },
-    select: {
-      id: true,
-    },
-  });
+  let user = new User();
+  user.id = req.user.id;
+  user = await user.findById();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -183,18 +165,12 @@ exports.updatePassword = async (req, res) => {
   let user = new User();
   user.id = req.user.id;
 
-  let usr = await user.find();
-
-  if (!usr) return res.status(404).json({ message: "User not found" });
-
   password = await user.passwordMatch(password);
 
   if (!password) return res.status(400).send("Invalid password");
 
   user.password = newpassword;
-  password = await user.hashPassword();
-
-  await user.update({ password });
+  await user.save();
 
   res.status(200).send("Password updated");
 };

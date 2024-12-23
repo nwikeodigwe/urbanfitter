@@ -1,78 +1,50 @@
 const jwt = require("jsonwebtoken");
 const rug = require("random-username-generator");
-const mail = require("../functions/mail");
 const mailconf = require("../config/mailconf");
 const bcrypt = require("bcryptjs");
-const _ = require("lodash");
+const User = require("../utils/User");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 exports.signUp = async (req, res) => {
-  let { email, password } = req.body;
-
-  if (!email || !password)
+  if (!req.body.email || !req.body.password)
     return res.status(400).json({ message: "Email and password required" });
 
-  let user = await prisma.user.findUnique({ where: { email } });
+  let user = new User();
+  user.email = req.body.email;
+  user.password = req.body.password;
+  user.name = rug.generate(req.body.email.split("@")[0]);
 
-  if (user) return res.status(400).json({ message: "User already exists" });
+  let usr = await user.find();
 
-  const salt = await bcrypt.genSalt(10);
-  password = await bcrypt.hash(password, salt);
+  if (usr) return res.status(400).json({ message: "User already exists" });
 
-  const name = rug.generate(email.split("@")[0]);
+  await user.save();
+  await user.mail(mailconf.welcome);
 
-  user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password,
-    },
-  });
-
-  user = _.pick(user, "id", "name", "email");
-  result = await mail(user, mailconf.welcome);
-
-  const token = jwt.sign(
-    {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  const token = await user.createToken();
 
   res.status(200).json({ token });
 };
 
 exports.signIn = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password)
+  if (!req.body.email || !req.body.password)
     return res.status(400).json({ message: "Email and password required" });
 
-  const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-  });
+  let user = new User();
+  user.email = req.body.email;
+  user.password = req.body.password;
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  let usr = await user.find();
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!usr) return res.status(404).json({ message: "User not found" });
 
-  if (!passwordMatch)
-    return res.status(400).json({ message: "Invalid password" });
-  const token = jwt.sign(
-    {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  const password = await user.passwordMatch();
+
+  if (!password) return res.status(400).json({ message: "Invalid password" });
+
+  const token = await user.createToken();
+
   res.json({ token });
 };
 

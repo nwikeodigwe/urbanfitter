@@ -1,7 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const Mail = require("./Mail");
 
 const prisma = new PrismaClient();
+const mail = new Mail();
 
 class User {
   constructor(user = {}) {
@@ -18,18 +21,31 @@ class User {
     };
   }
 
-  create(data = {}) {
-    return prisma.user.create({
-      data,
-      select: this.selectedFields,
-    });
-  }
+  save(user = {}) {
+    const name = user.name || this.name;
+    const email = user.email || this.email;
+    const password = user.password || this.password;
 
-  createOrUpdate(data = {}) {
-    return prisma.user.upsert({
-      where: { id: this.id },
-      update: data,
-      create: data,
+    const userData = {
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(password && { password: bcrypt.hashSync(password, 10) }),
+    };
+
+    if (this.id) {
+      const updateData = password
+        ? { ...userData }
+        : { ...userData, password: undefined };
+
+      return prisma.user.update({
+        where: { id: this.id },
+        data: updateData,
+        select: this.selectedFields,
+      });
+    }
+
+    return prisma.user.create({
+      data: userData,
       select: this.selectedFields,
     });
   }
@@ -83,8 +99,18 @@ class User {
   }
 
   async #getPassword() {
-    const user = await prisma.user.findUnique({
-      where: { id: this.id },
+    const id = this.id;
+    const email = this.email;
+
+    const filters = [id && { id }, email && { email }].filter(Boolean);
+
+    if (filters.length === 0) {
+      throw new Error("At least one of id, name, or email must be provided");
+    }
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: filters,
+      },
       select: { password: true },
     });
     return user.password;
@@ -97,6 +123,47 @@ class User {
   async passwordMatch(password = this.password) {
     const passwordHash = await this.#getPassword();
     return bcrypt.compare(password, passwordHash);
+  }
+
+  async createToken(user = {}) {
+    const usr = await this.find();
+
+    const id = user.id || this.id || usr.id;
+    const name = user.name || this.name || usr.name;
+    const email = user.email || this.email;
+
+    return jwt.sign(
+      {
+        id,
+        name,
+        email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+  }
+
+  mail(template, user = {}, attr = {}) {
+    const name = user.name || this.name;
+    const email = user.email || this.email;
+
+    const type = {
+      welcome: {
+        template: mail.WELCOME,
+        subject: mail.WELCOME_SUBJECT,
+        from: mail.WELCOME_FROM,
+      },
+    };
+
+    mail.content({
+      name,
+      email,
+      subject: type[template].subject,
+      from: type[template].from,
+      ...attr,
+    });
+
+    return mail.send(type[template].template);
   }
 
   delete() {

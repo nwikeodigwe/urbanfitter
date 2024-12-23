@@ -60,7 +60,6 @@ describe("Auth route", () => {
     it("Should return 400 if user already exists", async () => {
       await createUser();
       const res = await request(server).post("/api/auth/signup").send(user);
-
       expect(res.status).toBe(400);
     });
 
@@ -94,7 +93,6 @@ describe("Auth route", () => {
       await createUser();
       user.password = "invalidpassword";
       const res = await request(server).post("/api/auth/signin").send(user);
-
       expect(res.status).toBe(400);
     });
 

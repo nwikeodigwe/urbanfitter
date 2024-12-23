@@ -310,8 +310,6 @@ describe("User route", () => {
         .set(header)
         .send(passwordReset);
 
-      console.log(res.body);
-
       expect(res.status).toBe(400);
     });
 
