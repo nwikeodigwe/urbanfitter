@@ -130,14 +130,13 @@ describe("User route", () => {
 
   describe("GET /:user", () => {
     it("Should return 404 if user not found", async () => {
-      const res = await request(server).get("/api/user/user").set(header);
+      const res = await request(server).get("/api/user/userId").set(header);
       expect(res.status).toBe(404);
     });
 
     it("Should return 200 if user found", async () => {
-      const res = await request(server)
-        .get(`/api/user/${user.email}`)
-        .set(header);
+      user = await createUser();
+      const res = await request(server).get(`/api/user/${user.id}`).set(header);
       expect(res.status).toBe(200);
     });
   });
@@ -198,10 +197,10 @@ describe("User route", () => {
   });
 
   describe("GET /me", () => {
-    it("should return 500 if user not found", async () => {
+    it("should return 404 if user not found", async () => {
       await prisma.user.deleteMany();
       const res = await request(server).get("/api/user/me").set(header);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("should return 200 if user exist", async () => {
@@ -310,6 +309,8 @@ describe("User route", () => {
         .patch("/api/user/password")
         .set(header)
         .send(passwordReset);
+
+      console.log(res.body);
 
       expect(res.status).toBe(400);
     });

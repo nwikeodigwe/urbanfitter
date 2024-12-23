@@ -1,42 +1,25 @@
 const bcrypt = require("bcryptjs");
+const User = require("../utils/User");
+const _ = require("lodash");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
 exports.getAllUsers = async (req, res) => {
-  const users = await prisma.user.findMany({
-    where: { id: { not: req.user.id } },
-    select: {
-      id: true,
-      name: true,
-      profile: {
-        select: {
-          firstname: true,
-          lastname: true,
-          bio: true,
-        },
-      },
-    },
-  });
+  let users = new User();
 
-  if (!users.length) return res.status(404).json({ message: "No user found" });
+  users = await users.findMany();
+
+  if (users.length == 1)
+    return res.status(404).json({ message: "No user found" });
 
   res.status(200).json(users);
 };
 
 exports.subscribeToUser = async (req, res) => {
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { id: req.params.user },
-        { name: req.params.user },
-        { email: req.params.user },
-      ],
-    },
-    select: {
-      id: true,
-    },
-  });
+  let user = new User();
+
+  user = await user.findById(req.params.user);
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -105,38 +88,22 @@ exports.unsubscribeFromUser = async (req, res) => {
   res.status(200).end();
 };
 
-exports.getUser = async (req, res) => {
-  const user = await prisma.user.findFirstOrThrow({
-    where: {
-      id: req.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      profile: true,
-    },
-  });
+exports.getCurrentUser = async (req, res) => {
+  let user = new User();
+  user.id = req.user.id;
+  user = await user.findById();
+
+  if (!user) return res.status(404).json({ message: "User not found" });
 
   res.status(200).json(user);
 };
 
 exports.updateUser = async (req, res) => {
   const { name, email } = req.body;
+  let user = new User();
+  user.id = req.user.id;
 
-  const user = await prisma.user.update({
-    where: {
-      id: req.user.id,
-    },
-    data: {
-      name,
-      email,
-    },
-    select: {
-      name: true,
-      email: true,
-    },
-  });
+  user = await user.update({ name, email });
 
   res.status(200).json(user);
 };
@@ -212,57 +179,30 @@ exports.getUserCollection = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
-  const { password, newpassword } = req.body;
+  let { password, newpassword } = req.body;
+  let user = new User();
+  user.id = req.user.id;
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: req.user.id,
-    },
-    select: {
-      password: true,
-    },
-  });
+  let usr = await user.find();
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!usr) return res.status(404).json({ message: "User not found" });
 
-  if (!passwordMatch) return res.status(400).send("Invalid password");
+  password = await user.passwordMatch(password);
 
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(newpassword, salt);
+  if (!password) return res.status(400).send("Invalid password");
 
-  await prisma.user.update({
-    where: {
-      id: req.user.id,
-    },
-    data: {
-      password: hash,
-    },
-  });
+  user.password = newpassword;
+  password = await user.hashPassword();
+
+  await user.update({ password });
 
   res.status(200).send("Password updated");
 };
 
 exports.getUserById = async (req, res) => {
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { id: req.params.user },
-        { name: req.params.user },
-        { email: req.params.user },
-      ],
-    },
-    select: {
-      id: true,
-      name: true,
-      profile: {
-        select: {
-          firstname: true,
-          lastname: true,
-          bio: true,
-        },
-      },
-    },
-  });
+  let user = new User();
+  user.id = req.params.user;
+  user = await user.findById();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 

@@ -8,7 +8,7 @@ router.post("/:user/subscribe", userController.subscribeToUser);
 
 router.delete("/:user/unsubscribe", userController.unsubscribeFromUser);
 
-router.get("/me", userController.getUser);
+router.get("/me", userController.getCurrentUser);
 
 router.get("/:user/style", userController.getUserStyle);
 
