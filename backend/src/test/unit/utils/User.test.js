@@ -55,16 +55,10 @@ describe("User", () => {
 
     jest.spyOn(prisma.user, "create").mockResolvedValue(mockCreatedUser);
 
-    const mockUserData = {
-      name: "name",
-      email: "test@test.com",
-      password: "password",
-    };
+    let user = new User(mockUserData);
+    user = await user.save();
 
-    const user = new User(mockUserData);
-    const usr = await user.save();
-
-    expect(usr).toEqual({ ...mockCreatedUser, id: expect.any(String) });
+    expect(user).toEqual({ ...mockCreatedUser, id: expect.any(String) });
 
     // expect(prisma.user.create).toHaveBeenCalledWith({
     //   data: {

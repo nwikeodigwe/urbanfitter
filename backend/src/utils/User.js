@@ -23,6 +23,7 @@ class User {
   }
 
   async save(user = {}) {
+    let usr;
     const name = user.name || this.name;
     const email = user.email || this.email;
     const password = user.password || this.password;
@@ -34,22 +35,18 @@ class User {
     };
 
     if (this.id) {
-      const updateData = password
-        ? { ...userData }
-        : { ...userData, password: undefined };
-
-      return prisma.user.update({
+      usr = await prisma.user.update({
         where: { id: this.id },
-        data: updateData,
+        data: userData,
         select: this.selectedFields,
       });
+    } else {
+      usr = await prisma.user.create({
+        data: userData,
+        select: this.selectedFields,
+      });
+      this.id = usr.id;
     }
-
-    const usr = await prisma.user.create({
-      data: userData,
-      select: this.selectedFields,
-    });
-    this.id = usr.id;
     return usr;
   }
 
