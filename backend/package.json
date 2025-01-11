@@ -6,7 +6,7 @@
   "scripts": {
     "test": "dotenv -e .env.test -- jest --watchAll --verbose --coverage --runInBand",
     "start": "nodemon src/app.js",
-    "prisma:dev": "dotenv -e .env.development -- npx prisma migrate dev",
+    "prisma:dev": "dotenv -e .env -- npx prisma migrate dev",
     "prisma:prod": "dotenv -e .env.production -- npx prisma migrate deploy",
     "prisma:test": "dotenv -e .env.test -- npx prisma migrate dev"
   },

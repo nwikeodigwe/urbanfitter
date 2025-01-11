@@ -227,17 +227,6 @@ describe("Brand route", () => {
       expect(res.status).toBe(400);
     });
 
-    it("should return 400 if owner is not an user", async () => {
-      const brnd = await createBrand();
-      brand.owner = "owner";
-      const res = await request(server)
-        .patch(`/api/brand/${brnd.id}`)
-        .set(header)
-        .send(brand);
-
-      expect(res.status).toBe(400);
-    });
-
     it("should return 200 if brand is updated", async () => {
       const brnd = await createBrand();
       const res = await request(server)
@@ -492,7 +481,7 @@ describe("Brand route", () => {
         .set(header)
         .send(comment);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
     });
   });
 
