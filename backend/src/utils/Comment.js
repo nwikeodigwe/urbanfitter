@@ -53,6 +53,14 @@ class Comment {
       select: this.selectedFields,
     });
   }
+
+  delete(id = this.id) {
+    return prisma.comment.delete({
+      where: {
+        id,
+      },
+    });
+  }
 }
 
 module.exports = Comment;

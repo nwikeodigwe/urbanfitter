@@ -291,38 +291,26 @@ exports.getBrandComment = async (req, res) => {
 };
 
 exports.deleteComment = async (req, res) => {
-  let comment = await prisma.comment.findFirst({
-    where: {
-      id: req.params.comment,
-    },
-  });
+  let comment = new Comment();
+  comment.id = req.params.comment;
+  let commentExists = await comment.find();
 
-  if (!comment) return res.status(404).json({ message: "Comment not found" });
+  if (!commentExists)
+    return res.status(404).json({ message: "Comment not found" });
 
-  comment = await prisma.comment.delete({
-    where: { id: req.params.comment, authorId: req.user.id },
-  });
+  await comment.delete();
 
   res.status(204).end();
 };
 
 exports.deleteBrand = async (req, res) => {
-  let brand = await prisma.brand.findFirst({
-    where: {
-      id: req.params.brand,
-      owner: {
-        id: req.user.id,
-      },
-    },
-  });
+  let brand = new Brand();
+  brand.id = req.params.brand;
+  let brandExists = await brand.find();
 
-  if (!brand) return res.status(404).json({ message: "Brand not found" });
+  if (!brandExists) return res.status(404).json({ message: "Brand not found" });
 
-  await prisma.brand.delete({
-    where: {
-      id: req.params.brand,
-    },
-  });
+  if (brandExists.owner.id === req.user.id) brand.delete();
 
   res.status(204).end();
 };

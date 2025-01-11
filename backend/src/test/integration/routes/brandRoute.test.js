@@ -528,7 +528,7 @@ describe("Brand route", () => {
     });
   });
 
-  describe("DELETE /:style", () => {
+  describe("DELETE /:brand", () => {
     it("Should return 404 if comment not found", async () => {
       const res = await request(server)
         .delete("/api/brand/brandId")
