@@ -98,6 +98,48 @@ class User {
     });
   }
 
+  async isSubscribedTo(id) {
+    let subscription = await prisma.userSubscription.findFirst({
+      where: {
+        userId: id,
+        subscriberId: this.id,
+      },
+    });
+
+    return !!subscription;
+  }
+
+  subscribeTo(id) {
+    return prisma.userSubscription.create({
+      data: {
+        subscriber: {
+          connect: {
+            id: this.id,
+          },
+        },
+        user: {
+          connect: {
+            id,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  unsubscribeFrom(id) {
+    return prisma.userSubscription.delete({
+      where: {
+        userId_subscriberId: {
+          userId: id,
+          subscriberId: this.id,
+        },
+      },
+    });
+  }
+
   async #getId() {
     const name = this.name;
     const email = this.email;

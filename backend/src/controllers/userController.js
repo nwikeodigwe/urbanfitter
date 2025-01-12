@@ -16,37 +16,17 @@ exports.getAllUsers = async (req, res) => {
 exports.subscribeToUser = async (req, res) => {
   let user = new User();
   user.id = req.params.user;
-  user = await user.findById();
+  let userExists = await user.findById();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!userExists) return res.status(404).json({ message: "User not found" });
 
-  let subscription = await prisma.userSubscription.findFirst({
-    where: {
-      userId: user.id,
-      subscriberId: req.user.id,
-    },
-  });
+  user.id = req.user.id;
+  let isSubscribed = await user.isSubscribedTo(req.params.user);
 
-  if (subscription)
+  if (isSubscribed)
     return res.status(400).json({ message: "Already subscribed" });
 
-  subscription = await prisma.userSubscription.create({
-    data: {
-      subscriber: {
-        connect: {
-          id: req.user.id,
-        },
-      },
-      user: {
-        connect: {
-          id: user.id,
-        },
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
+  let subscription = await user.subscribeTo(req.params.user);
 
   res.status(201).json({ subscription });
 };
@@ -54,26 +34,16 @@ exports.subscribeToUser = async (req, res) => {
 exports.unsubscribeFromUser = async (req, res) => {
   let user = new User();
   user.id = req.params.user;
-  user.name = req.params.user;
-  user.email = req.params.user;
-  user = await user.find();
+  let userExists = await user.findById();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!userExists) return res.status(404).json({ message: "User not found" });
 
-  const subscription = await prisma.userSubscription.findFirst({
-    where: {
-      userId: user.id,
-      subscriberId: req.user.id,
-    },
-  });
+  user.id = req.user.id;
+  let isSubscribed = await user.isSubscribedTo(req.params.user);
 
-  if (!subscription) return res.status(400).json({ message: "Not subscribed" });
+  if (!isSubscribed) return res.status(400).json({ message: "Not subscribed" });
 
-  await prisma.userSubscription.delete({
-    where: {
-      id: subscription.id,
-    },
-  });
+  await user.unsubscribeFrom(req.params.user);
 
   res.status(200).end();
 };
@@ -89,11 +59,11 @@ exports.getCurrentUser = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-  const { name, email } = req.body;
-  let user = new User();
-  user.id = req.user.id;
-  user.name = name;
-  user.email = email;
+  let user = new User({
+    id: req.user.id,
+    name: req.body.name,
+    email: req.body.email,
+  });
 
   user = await user.save();
 
@@ -161,15 +131,14 @@ exports.getUserCollection = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
-  let { password, newpassword } = req.body;
   let user = new User();
   user.id = req.user.id;
 
-  password = await user.passwordMatch(password);
+  let password = await user.passwordMatch(req.body.password);
 
   if (!password) return res.status(400).send("Invalid password");
 
-  user.password = newpassword;
+  user.password = req.body.newpassword;
   await user.save();
 
   res.status(200).send("Password updated");
