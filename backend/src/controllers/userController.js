@@ -58,11 +58,10 @@ exports.getCurrentUser = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-  let user = new User({
-    id: req.user.id,
-    name: req.body.name,
-    email: req.body.email,
-  });
+  let user = new User();
+  user.id = req.user.id;
+  user.name = req.body.name;
+  user.email = req.body.email;
 
   user = await user.save();
 

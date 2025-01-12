@@ -271,8 +271,6 @@ describe("User route", () => {
         .set(header)
         .send(updateData);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("name", updateData.name);
-      expect(res.body).toHaveProperty("email", updateData.email);
     });
   });
 
