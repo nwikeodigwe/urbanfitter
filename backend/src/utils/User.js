@@ -255,6 +255,19 @@ class User {
     if (reset.expires < new Date()) return false;
   }
 
+  updateProfile(data = {}) {
+    return prisma.profile.upsert({
+      where: { userId: this.id },
+      update: { ...data },
+      create: { ...data, user: { connect: { id: this.id } } },
+      select: {
+        firstname: true,
+        lastname: true,
+        bio: true,
+      },
+    });
+  }
+
   delete() {
     return prisma.user.delete({
       where: {

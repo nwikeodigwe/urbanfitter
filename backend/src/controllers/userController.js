@@ -1,7 +1,6 @@
 const User = require("../utils/User");
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const Style = require("../utils/Style");
+const Collection = require("../utils/Collection");
 
 exports.getAllUsers = async (req, res) => {
   let user = new User();
@@ -10,7 +9,7 @@ exports.getAllUsers = async (req, res) => {
   if (users.length == 1)
     return res.status(404).json({ message: "No user found" });
 
-  res.status(200).json(users);
+  res.status(200).json({ users });
 };
 
 exports.subscribeToUser = async (req, res) => {
@@ -55,7 +54,7 @@ exports.getCurrentUser = async (req, res) => {
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  res.status(200).json(user);
+  res.status(200).json({ user });
 };
 
 exports.updateUser = async (req, res) => {
@@ -67,30 +66,22 @@ exports.updateUser = async (req, res) => {
 
   user = await user.save();
 
-  res.status(200).json(user);
+  res.status(200).json({ user });
 };
 
 exports.updateProfile = async (req, res) => {
-  const { firstname, lastname, bio } = req.body;
+  let user = new User();
+  user.id = req.user.id;
 
-  const profileData = {
-    ...(firstname !== undefined && { firstname }),
-    ...(lastname !== undefined && { lastname }),
-    ...(bio !== undefined && { bio }),
+  const data = {
+    ...(req.body.firstname !== undefined && { firstname: req.body.firstname }),
+    ...(req.body.lastname !== undefined && { lastname: req.body.lastname }),
+    ...(req.body.bio !== undefined && { bio: req.body.lastname }),
   };
 
-  const profile = await prisma.profile.upsert({
-    where: { userId: req.user.id },
-    update: { ...profileData },
-    create: { ...profileData, user: { connect: { id: req.user.id } } },
-    select: {
-      firstname: true,
-      lastname: true,
-      bio: true,
-    },
-  });
+  const profile = await user.updateProfile(data);
 
-  return res.status(200).json(profile);
+  return res.status(200).json({ profile });
 };
 
 exports.getUserStyle = async (req, res) => {
@@ -100,11 +91,8 @@ exports.getUserStyle = async (req, res) => {
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  let style = await prisma.style.findMany({
-    where: {
-      userId: user.id,
-    },
-  });
+  let style = new Style();
+  style = await style.findMany({ userId: user.id });
 
   if (!style.length) return res.status(404).json({ message: "No style found" });
 
@@ -118,11 +106,8 @@ exports.getUserCollection = async (req, res) => {
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  let collection = await prisma.collection.findMany({
-    where: {
-      userId: user.id,
-    },
-  });
+  let collection = new Collection();
+  collection = await collection.findMany({ userId: user.id });
 
   if (!collection.length)
     return res.status(404).json({ message: "No collection found" });
@@ -136,12 +121,12 @@ exports.updatePassword = async (req, res) => {
 
   let password = await user.passwordMatch(req.body.password);
 
-  if (!password) return res.status(400).send("Invalid password");
+  if (!password) return res.status(400).json({ message: "Invalid password" });
 
   user.password = req.body.newpassword;
   await user.save();
 
-  res.status(200).send("Password updated");
+  res.status(200).end();
 };
 
 exports.getUserById = async (req, res) => {
@@ -151,5 +136,5 @@ exports.getUserById = async (req, res) => {
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  res.status(200).json(user);
+  res.status(200).json({ user });
 };

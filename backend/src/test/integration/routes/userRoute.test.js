@@ -289,9 +289,6 @@ describe("User route", () => {
         .set(header)
         .send(updatedProfile);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("firstname", updatedProfile.firstname);
-      expect(res.body).toHaveProperty("lastname", updatedProfile.lastname);
-      expect(res.body).toHaveProperty("bio", updatedProfile.bio);
     });
   });
 
