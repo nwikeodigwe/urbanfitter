@@ -64,5 +64,5 @@ jobs:
         run: |
           cd backend
           npm install
-          npx prisma migrate deploy
+          npx prisma migrate reset
           npx jest --verbose --runInBand
