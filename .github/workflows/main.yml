@@ -64,5 +64,7 @@ jobs:
         run: |
           cd backend
           npm install
+          npx prisma db pull
+          npx prisma generate
           npx prisma migrate dev
           npx jest --verbose --runInBand
