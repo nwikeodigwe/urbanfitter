@@ -1,4 +1,4 @@
-const User = require("../../../utils/User");
+const User = require("./User");
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs/dist/bcrypt");
 

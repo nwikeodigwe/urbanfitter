@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 class Comment {
   constructor(comment = {}) {
     this.id = comment.id;
-    this.entity = "BRAND";
+    this.entity = comment.entity;
     this.selectedFields = {
       id: true,
       author: { select: { id: true, name: true } },
@@ -30,7 +30,7 @@ class Comment {
             id: comment.userId,
           },
         },
-        entity: this.entity,
+        entity: comment.entity,
         entityId: comment.entityId,
         ...(this.id && {
           parent: { connect: { id: this.id } },

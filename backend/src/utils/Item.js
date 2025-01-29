@@ -8,16 +8,15 @@ class Item {
     this.id = item.id || null;
     this.title = item.title || null;
     this.description = item.description || null;
-    this.image = item.image || null;
-    this.price = item.price || null;
+    this.images = item.images || null;
+    this.brand = item.brand || null;
     this.userId = item.userId || null;
     this.selectedFields = {
       id: true,
-      title: true,
+      name: true,
       description: true,
-      image: true,
-      price: true,
-      userId: true,
+      images: true,
+      creator: { select: { id: true } },
     };
   }
 
@@ -26,24 +25,86 @@ class Item {
     const name = item.name || this.name;
     const description = item.description || this.description;
     const tags = item.tags || this.tags;
-    const itemId = item.itemId || this.itemId;
+    const id = item.id || this.id;
+    const brand = item.brand || this.brand;
+    const images = item.images || this.images;
+    const creator = item.creator || this.creator;
 
     const itemData = {
       ...(name && { name }),
       ...(description && { description }),
-      ...(itemId && { itemId }),
       ...(tags && { tags }),
+      ...(brand && { brand }),
+      ...(images && { images }),
+      ...(creator && { creator }),
     };
 
-    if (this.id) {
+    if (id) {
       itm = await prisma.item.update({
-        where: { id: this.id },
-        data: itemData,
+        where: { id },
+        data: {
+          ...(name && { name }),
+          ...(description && { description }),
+          ...(tags &&
+            tags.length > 0 && {
+              tags: {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              },
+            }),
+          ...(creator && {
+            creator: { connect: { id: creator } },
+          }),
+          ...(images && {
+            images: {
+              connect: images.map((image) => ({
+                id: image,
+              })),
+            },
+          }),
+          ...(brand && {
+            brand: {
+              connectOrCreate: {
+                where: { name: brand },
+                create: { name: brand },
+              },
+            },
+          }),
+        },
         select: this.selectedFields,
       });
     } else {
       itm = await prisma.item.create({
-        data: itemData,
+        data: {
+          ...itemData,
+          ...(tags &&
+            tags.length > 0 && {
+              tags: {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              },
+            }),
+          ...(creator && {
+            creator: { connect: { id: creator } },
+          }),
+          ...(images && {
+            images: {
+              connect: images.map((image) => ({
+                id: image,
+              })),
+            },
+          }),
+          brand: {
+            connectOrCreate: {
+              where: { name: brand },
+              create: { name: brand },
+            },
+          },
+        },
         select: this.selectedFields,
       });
       this.id = itm.id;
@@ -84,6 +145,121 @@ class Item {
     });
   }
 
+  favorite(user) {
+    return prisma.favoriteItem.upsert({
+      where: {
+        userId_itemId: {
+          userId: user,
+          itemId: this.id,
+        },
+      },
+      create: {
+        user: {
+          connect: {
+            id: user,
+          },
+        },
+        item: {
+          connect: {
+            id: this.id,
+          },
+        },
+      },
+      update: {},
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  isFavorited(user) {
+    return prisma.favoriteItem.findFirst({
+      where: {
+        userId: user,
+        itemId: this.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  async unfavorite(user) {
+    await prisma.favoriteItem.delete({
+      where: {
+        userId_itemId: {
+          userId: user,
+          itemId: this.id,
+        },
+      },
+    });
+  }
+
+  upvote(user) {
+    return prisma.itemVote.upsert({
+      where: {
+        userId_itemId: { itemId: this.id, userId: user },
+      },
+      update: {
+        vote: true,
+      },
+      create: {
+        user: {
+          connect: {
+            id: user,
+          },
+        },
+        item: {
+          connect: {
+            id: this.id,
+          },
+        },
+        vote: true,
+      },
+    });
+  }
+
+  isVoted(user) {
+    return prisma.itemVote.findFirst({
+      where: {
+        itemId: this.id,
+        userId: user,
+      },
+    });
+  }
+
+  downvote(user) {
+    return prisma.itemVote.upsert({
+      where: {
+        userId_itemId: { itemId: this.id, userId: user },
+      },
+      update: {
+        vote: false,
+      },
+      create: {
+        user: {
+          connect: {
+            id: user,
+          },
+        },
+        item: {
+          connect: {
+            id: this.id,
+          },
+        },
+        vote: false,
+      },
+    });
+  }
+
+  unvote(user) {
+    return prisma.itemVote.delete({
+      where: {
+        userId_itemId: { itemId: this.id, userId: user },
+      },
+    });
+  }
+
   delete(id = this.id) {
     return prisma.item.delete({
       where: {
@@ -92,3 +268,5 @@ class Item {
     });
   }
 }
+
+module.exports = Item;

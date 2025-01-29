@@ -1,5 +1,5 @@
 const winston = require("winston");
-const { logger, initializeLogging } = require("../../startup/logging");
+const { logger, initializeLogging } = require("./logging");
 
 describe("Logger configuration", () => {
   beforeEach(() => {

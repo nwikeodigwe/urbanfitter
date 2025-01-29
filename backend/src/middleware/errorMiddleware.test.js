@@ -1,5 +1,5 @@
 const winston = require("winston");
-const error = require("../../../middleware/error");
+const error = require("./error");
 
 describe("error middleware", () => {
   it("Should log error and send a 500 response", () => {

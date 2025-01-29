@@ -1,6 +1,6 @@
 const request = require("supertest");
 const { PrismaClient } = require("@prisma/client");
-const app = require("../../../app");
+const app = require("../app");
 let server;
 
 const prisma = new PrismaClient();
@@ -353,15 +353,15 @@ describe("Collection route", () => {
     });
 
     it("Should return 400 if tag is not an array", async () => {
-      collection.tag = "tag";
       const collect = await createCollection();
+      collection.tags = "tag";
       const res = await request(server)
         .patch(`/api/collection/${collect.id}`)
         .set(header)
         .send(collection);
     });
 
-    it("Should return 200 if collection downvoted", async () => {
+    it("Should return 200 if collection updated", async () => {
       collect = await createCollection();
       const res = await request(server)
         .patch(`/api/collection/${collect.id}`)
