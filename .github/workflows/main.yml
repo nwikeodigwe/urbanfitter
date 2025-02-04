@@ -65,6 +65,6 @@ jobs:
         run: |
           cd app
           npm install
-          npx prisma db push
-          npx prisma migrate dev reset
+          npx prisma migrate resolve --applied 20250128151205_item_vote_to_boolean
+          npx prisma migrate deploy
           npx jest --verbose --runInBand
