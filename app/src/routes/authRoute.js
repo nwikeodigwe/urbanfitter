@@ -39,7 +39,7 @@ router.post("/signin", async (req, res) => {
   user.email = req.body.email;
   user.password = req.body.password;
 
-  logger.info(`Finding user ${user.email}`);
+  logger.info(`Finding user...`);
   let usr = await user.find();
 
   if (!usr) return res.status(404).json({ message: "User not found" });

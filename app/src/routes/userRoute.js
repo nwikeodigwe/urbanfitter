@@ -52,7 +52,7 @@ router.delete("/:user/unsubscribe", async (req, res) => {
 router.get("/me", async (req, res) => {
   let user = new User();
   user.id = req.user.id;
-  user = await user.findById();
+  user = await user.find();
 
   if (!user) return res.status(404).json({ message: "User not found" });
 

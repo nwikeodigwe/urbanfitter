@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE `itemvote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE `itemVote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;

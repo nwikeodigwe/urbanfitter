@@ -77,6 +77,7 @@ class User {
       where: {
         id,
       },
+      select: this.selectedFields,
     });
   }
 
