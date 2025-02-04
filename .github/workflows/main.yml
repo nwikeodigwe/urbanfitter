@@ -57,6 +57,7 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URI: "mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:${{ secrets.MYSQL_PORT }}/${{ secrets.MYSQL_DB }}"
+          SHADOW_DATABASE_URL: mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:${{ secrets.MYSQL_PORT }}/prisma_shadow_db"
           FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
           FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -65,5 +66,5 @@ jobs:
           cd app
           npm install
           npx prisma db push
-          npx prisma migrate dev
+          npx prisma migrate dev reset
           npx jest --verbose --runInBand
