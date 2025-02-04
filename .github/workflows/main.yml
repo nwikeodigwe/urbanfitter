@@ -1,4 +1,4 @@
-name: Relay app CI pipeline
+name: CI pipeline
 
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
       - name: Install dependencies and run tests
         env:
           NODE_ENV: test
-          DATABASE_URL: "mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:${{ secrets.MYSQL_PORT }}/${{ secrets.MYSQL_DB }}"
+          DATABASE_URI: "mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:${{ secrets.MYSQL_PORT }}/${{ secrets.MYSQL_DB }}"
           FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
           FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -64,7 +64,6 @@ jobs:
         run: |
           cd backend
           npm install
-          npx prisma db pull
-          npx prisma generate
+          npx prisma db push
           npx prisma migrate dev
           npx jest --verbose --runInBand
