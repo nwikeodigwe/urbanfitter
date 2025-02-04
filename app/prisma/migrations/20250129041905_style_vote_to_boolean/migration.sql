@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `commentVote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE `CommentVote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;
 
 -- AlterTable
-ALTER TABLE `styleVote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE `StyleVote` MODIFY `vote` BOOLEAN NOT NULL DEFAULT true;
