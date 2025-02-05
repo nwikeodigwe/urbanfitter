@@ -4,6 +4,7 @@
 
 /app/*.env*
 /app/*.log
+/app/logs
 
 /.vscode
 

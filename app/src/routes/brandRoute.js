@@ -100,7 +100,6 @@ router.patch("/:brand", async (req, res) => {
         .toLowerCase()
         .replace(/[^a-zA-Z0-9]/g, "")
     );
-
   brand = await brand.save();
 
   res.status(200).json({ brand });

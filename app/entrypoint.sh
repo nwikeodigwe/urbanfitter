@@ -3,8 +3,6 @@ MAX_RETRIES=10
 RETRY_DELAY=2
 RETRY_COUNT=0
 
-echo "Database is available!"
-
 echo "Applying database schema..."
 if ! npx prisma db push; then
   echo "Database schema push failed! Exiting."

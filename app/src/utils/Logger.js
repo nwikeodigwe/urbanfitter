@@ -3,12 +3,24 @@ require("express-async-errors");
 
 class Logger {
   constructor() {
+    this.logFormat = winston.format.combine(
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+      winston.format.json(),
+      winston.format.printf(
+        (info) => `${info.timestamp} ${info.level}: ${info.message}`
+      )
+    );
     this.logger = winston.createLogger({
       level: "info",
-      format: winston.format.json(),
+      format: this.logFormat,
       transports: [
-        new winston.transports.Console({ format: winston.format.simple() }),
-        new winston.transports.File({ filename: "logfile.log" }),
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            this.logFormat
+          ),
+        }),
+        new winston.transports.File({ filename: "logs/logfile.log" }),
       ],
     });
 
@@ -17,7 +29,7 @@ class Logger {
 
   initializeLogging() {
     winston.exceptions.handle(
-      new winston.transports.File({ filename: "uncaughtExceptions.log" })
+      new winston.transports.File({ filename: "logs/uncaughtExceptions.log" })
     );
 
     process.on("unhandledRejection", (ex) => {

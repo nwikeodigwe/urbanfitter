@@ -1,10 +1,7 @@
 const express = require("express");
 const Item = require("../utils/Item");
 const User = require("../utils/User");
-const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
-
-const prisma = new PrismaClient();
 
 router.post("/", async (req, res) => {
   if (!req.body.name || !req.body.description)

@@ -6,6 +6,7 @@ const styleRoute = require("../routes/styleRoute");
 const itemRoute = require("../routes/itemRoute");
 const collectionRoute = require("../routes/collectionRoute");
 const error = require("../middleware/error");
+const morgan = require("../middleware/morgan");
 const auth = require("../middleware/auth");
 const passport = require("passport");
 const cors = require("cors");
@@ -15,6 +16,7 @@ module.exports = (app) => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(passport.initialize());
+  app.use(morgan);
   app.use("/api/auth", authRoute);
   app.use(auth);
   app.use("/api/user", userRoute);

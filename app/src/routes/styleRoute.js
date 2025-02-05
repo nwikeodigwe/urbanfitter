@@ -2,10 +2,8 @@ const express = require("express");
 const Style = require("../utils/Style");
 const Collection = require("../utils/Collection");
 const Comment = require("../utils/Comment");
-const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
 
-const prisma = new PrismaClient();
 const ENTITY = "STYLE";
 
 router.post("/", async (req, res) => {
@@ -165,8 +163,6 @@ router.delete("/comment/:comment", async (req, res) => {
 });
 
 router.patch("/:style", async (req, res) => {
-  let { name, description, items, tags } = req.body;
-
   if (!req.body.name && !req.body.description)
     return res
       .status(400)
@@ -254,7 +250,6 @@ router.delete("/:style/unvote", async (req, res) => {
   let styleExists = await style.find();
 
   if (!styleExists) return res.status(404).json({ message: "Style not found" });
-
   const vote = await style.isVoted(req.user.id);
 
   if (!vote) return res.status(404).json({ message: "Vote not found" });

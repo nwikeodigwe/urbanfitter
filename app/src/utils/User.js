@@ -1,7 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const logger = require("./Logger");
 const Mail = require("./Mail");
 
 const prisma = new PrismaClient();
@@ -207,7 +206,6 @@ class User {
       ...attr,
     });
 
-    template && email && logger.info(`Sending ${template} email to ${email}`);
     return mail.send(type[template].template);
   }
 
@@ -254,7 +252,6 @@ class User {
   }
 
   delete() {
-    this.id && logger.info(`Deleting user ${this.id}`);
     return prisma.user.delete({
       where: {
         id: this.id,

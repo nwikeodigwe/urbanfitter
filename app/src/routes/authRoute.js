@@ -1,7 +1,6 @@
 const express = require("express");
 const passport = require("passport");
 const rug = require("random-username-generator");
-const logger = require("../utils/Logger");
 const mailconf = require("../config/mailconf");
 const User = require("../utils/User");
 const router = express.Router();
@@ -15,17 +14,14 @@ router.post("/signup", async (req, res) => {
   user.password = req.body.password;
   user.name = rug.generate(req.body.email.split("@")[0]);
 
-  logger.info(`Finding user ${user.name}`);
   let userExits = await user.find();
 
   if (userExits)
     return res.status(400).json({ message: "User already exists" });
 
-  logger.info(`Saving user ${user.name}`);
   await user.save();
   await user.mail(mailconf.welcome);
 
-  logger.info(`Creating token for user ${user.name}`);
   const token = await user.createToken();
 
   res.status(200).json({ token });
@@ -39,17 +35,14 @@ router.post("/signin", async (req, res) => {
   user.email = req.body.email;
   user.password = req.body.password;
 
-  logger.info(`Finding user...`);
   let usr = await user.find();
 
   if (!usr) return res.status(404).json({ message: "User not found" });
 
-  logger.info(`Matching password for user ${usr.id}`);
   const password = await user.passwordMatch();
 
   if (!password) return res.status(400).json({ message: "Invalid password" });
 
-  logger.info(`Creating token for user ${usr.id}`);
   const token = await user.createToken();
 
   res.json({ token });

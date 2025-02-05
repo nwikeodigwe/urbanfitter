@@ -2,10 +2,17 @@ services:
   app:
     build: app
     command: ["sh", "/app/entrypoint.sh"]
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app
+          ignore:
+            - /app/node_modules/
+        - action: rebuild
+          path: /app/package.json
     networks:
       - network
-    volumes:
-      - ./app:/app
     working_dir: /app
     ports:
       - "3000:3000"
