@@ -1,11 +1,9 @@
 FROM node:22-alpine
 
-
 WORKDIR /app
 
-RUN apk add --no-cache openssl libssl3 mysql-client
+RUN apk add --no-cache openssl libssl3
 ENV OPENSSL_DIR=/usr/lib/ssl
-
 
 COPY package*.json ./
 
