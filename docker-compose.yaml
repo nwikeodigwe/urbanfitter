@@ -1,7 +1,7 @@
 services:
   app:
     build: app
-    command: ["/bin/sh", "/app/entrypoint.sh"]
+    command: ["sh", "/app/entrypoint.sh"]
     networks:
       - network
     volumes:

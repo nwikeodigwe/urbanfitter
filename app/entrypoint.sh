@@ -5,7 +5,6 @@ RETRY_COUNT=0
 
 echo "Database is available!"
 
-# Ensure the database schema is applied
 echo "Applying database schema..."
 if ! npx prisma db push; then
   echo "Database schema push failed! Exiting."
