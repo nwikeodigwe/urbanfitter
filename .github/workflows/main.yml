@@ -66,5 +66,6 @@ jobs:
           cd app
           npm install
           npx prisma migrate resolve --applied 20250128151205_item_vote_to_boolean
+          npx prisma migrate resolve --applied 20250129041905_style_vote_to_boolean
           npx prisma migrate deploy
           npx jest --verbose --runInBand
