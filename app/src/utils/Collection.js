@@ -164,7 +164,7 @@ class Collection {
         },
       },
       update: {
-        vote: 1,
+        vote: true,
       },
       create: {
         user: {
@@ -177,7 +177,7 @@ class Collection {
             id: collectionId,
           },
         },
-        vote: 1,
+        vote: true,
       },
     });
   }
@@ -191,7 +191,7 @@ class Collection {
         },
       },
       update: {
-        vote: -1,
+        vote: false,
       },
       create: {
         user: {
@@ -204,7 +204,7 @@ class Collection {
             id: collectionId,
           },
         },
-        vote: -1,
+        vote: false,
       },
     });
   }

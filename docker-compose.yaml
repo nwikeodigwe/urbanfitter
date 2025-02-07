@@ -2,15 +2,17 @@ services:
   app:
     build: app
     command: ["sh", "/app/entrypoint.sh"]
-    develop:
-      watch:
-        - action: sync
-          path: ./app
-          target: /app
-          ignore:
-            - /app/node_modules/
-        - action: rebuild
-          path: /app/package.json
+    volumes:
+      - ./app:/app
+    # develop:
+    #   watch:
+    #     - action: sync
+    #       path: ./app
+    #       target: /app
+    #       ignore:
+    #         - /app/node_modules/
+    #     - action: rebuild
+    #       path: /app/package.json
     networks:
       - network
     working_dir: /app

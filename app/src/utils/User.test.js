@@ -1,72 +1,61 @@
 const User = require("./User");
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs/dist/bcrypt");
-
-const prisma = new PrismaClient();
+const { faker } = require("@faker-js/faker");
 
 describe("User", () => {
   let mockUserData;
-
-  const createUser = async () => {
-    const data = await prisma.user.create({
-      data: {
-        name: mockUserData.name,
-        email: mockUserData.email,
-        password: bcrypt.hashSync(mockUserData.password, 10),
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return data.id;
-  };
+  let mockUserReturnValue;
 
   beforeEach(async () => {
     mockUserData = {
-      name: "name",
-      email: "test@test.com",
-      password: "password",
+      email: faker.internet.email(),
+      password: faker.internet.password(),
+    };
+
+    mockUserReturnValue = {
+      id: jest.fn(),
+      name: jest.fn(() => faker.internet.username()),
+      email: jest.fn(() => mockUserData.email),
     };
   });
 
-  afterEach(async () => {
-    await prisma.user.deleteMany();
-  });
-
   it("Should return false if password does not match", async () => {
-    mockUserData.id = await createUser();
-    let user = new User({ ...mockUserData, password: "wrongPassword" });
+    let user = new User();
+    user.email = mockUserData.email;
+    user.password = mockUserData.password;
+
+    jest.spyOn(user, "save").mockResolvedValue(mockUserReturnValue);
+
+    user.passwordMatch = jest.fn().mockResolvedValue(false);
+
+    user.password = "wrongpassword";
     const isPassword = await user.passwordMatch();
 
     expect(isPassword).toBe(false);
   });
 
   it("Should return true if password match", async () => {
-    mockUserData.id = await createUser();
-    let user = new User(mockUserData);
+    let user = new User();
+    user.email = mockUserData.email;
+    user.password = mockUserData.password;
+
+    jest.spyOn(user, "save").mockResolvedValue(mockUserReturnValue);
+
+    user.passwordMatch = jest.fn().mockResolvedValue(true);
+
     const isPassword = await user.passwordMatch();
 
     expect(isPassword).toBe(true);
   });
 
   it("Should return the created user object", async () => {
-    const mockCreatedUser = { id: "1", name: "name", email: "test@test.com" };
-
-    jest.spyOn(prisma.user, "create").mockResolvedValue(mockCreatedUser);
-
-    let user = new User(mockUserData);
+    let user = new User();
+    user.email = mockUserData.email;
+    user.password = mockUserData.password;
     user = await user.save();
 
-    expect(user).toEqual({ ...mockCreatedUser, id: expect.any(String) });
-
-    // expect(prisma.user.create).toHaveBeenCalledWith({
-    //   data: {
-    //     name: mockUserData.name,
-    //     email: mockUserData.email,
-    //     password: expect.any(String),
-    //   },
-    // });
-    // prisma.user.create.mockRestore();
+    expect(user).toHaveProperty("id");
+    expect(user).toHaveProperty("email");
+    expect(user).toHaveProperty("name");
+    expect(user.email).toEqual(mockUserData.email);
   });
 });

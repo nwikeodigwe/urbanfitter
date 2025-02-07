@@ -14,7 +14,7 @@ describe("Collection route", () => {
 
   const auth = async () => {
     const res = await request(server).post("/api/auth/signup").send(user);
-    return res.body.token;
+    return res.body.login.token;
   };
 
   const createCollection = () => {
@@ -108,7 +108,7 @@ describe("Collection route", () => {
         },
       },
       update: {
-        vote: 1,
+        vote: true,
       },
       create: {
         user: {
@@ -121,7 +121,7 @@ describe("Collection route", () => {
             id: collectionId,
           },
         },
-        vote: 1,
+        vote: true,
       },
     });
   };

@@ -15,7 +15,7 @@ describe("Style Route", () => {
 
   const auth = async () => {
     const res = await request(server).post("/api/auth/signup").send(user);
-    return res.body.token;
+    return res.body.login.token;
   };
 
   const createStyle = async (collectionId) => {

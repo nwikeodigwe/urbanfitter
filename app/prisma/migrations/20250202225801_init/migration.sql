@@ -150,10 +150,10 @@ ALTER TABLE `_StyleTags` DROP FOREIGN KEY `_StyleTags_A_fkey`;
 ALTER TABLE `_StyleTags` DROP FOREIGN KEY `_StyleTags_B_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `commentvote` DROP FOREIGN KEY `CommentVote_commentId_fkey`;
+ALTER TABLE `CommentVote` DROP FOREIGN KEY `CommentVote_commentId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `commentvote` DROP FOREIGN KEY `CommentVote_userId_fkey`;
+ALTER TABLE `CommentVote` DROP FOREIGN KEY `CommentVote_userId_fkey`;
 
 -- DropForeignKey
 ALTER TABLE `favoriteItem` DROP FOREIGN KEY `favoriteItem_itemId_fkey`;
@@ -597,10 +597,10 @@ ALTER TABLE `comment` ADD CONSTRAINT `Comment_authorId_fkey` FOREIGN KEY (`autho
 ALTER TABLE `comment` ADD CONSTRAINT `Comment_parentId_fkey` FOREIGN KEY (`parentId`) REFERENCES `comment`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `commentvote` ADD CONSTRAINT `CommentVote_commentId_fkey` FOREIGN KEY (`commentId`) REFERENCES `comment`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `CommentVote` ADD CONSTRAINT `CommentVote_commentId_fkey` FOREIGN KEY (`commentId`) REFERENCES `comment`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `commentvote` ADD CONSTRAINT `CommentVote_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `CommentVote` ADD CONSTRAINT `CommentVote_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `favoritebrand` ADD CONSTRAINT `FavoriteBrand_brandId_fkey` FOREIGN KEY (`brandId`) REFERENCES `brand`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

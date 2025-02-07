@@ -1,128 +1,64 @@
 const request = require("supertest");
 const app = require("../app");
+const User = require("../utils/User");
+const Collection = require("../utils/Collection");
+const Style = require("../utils/Style");
+const { faker } = require("@faker-js/faker");
 const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs/dist/bcrypt");
+const { status } = require("http-status");
 let server;
 
 const prisma = new PrismaClient();
 
 describe("User route", () => {
-  let user;
-  let user2;
-  let token;
   let header;
-  let passwordReset;
-
-  const auth = async () => {
-    const res = await request(server).post("/api/auth/signup").send(user);
-    return res.body.token;
-  };
-
-  const createUser = () => {
-    return prisma.user.create({
-      data: {
-        email: user2.email,
-        password: bcrypt.hashSync(user.password, 10),
-      },
-    });
-  };
-
-  const createStyle = async (collectionId) => {
-    const stle = await prisma.style.create({
-      data: {
-        name: style.name,
-        description: style.description,
-        tags: {
-          connectOrCreate: style.tags.map((tag) => ({
-            where: { name: tag },
-            create: { name: tag },
-          })),
-        },
-        collection: { connect: { id: collectionId } },
-        author: { connect: { email: user.email } },
-      },
-    });
-
-    return stle.id;
-  };
-
-  const createCollection = async () => {
-    const collect = await prisma.collection.create({
-      data: {
-        name: collection.name,
-        description: collection.description,
-        tags: {
-          connectOrCreate: collection.tags.map((tag) => ({
-            where: { name: tag },
-            create: { name: tag },
-          })),
-        },
-        author: { connect: { email: user.email } },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return collect.id;
-  };
-
-  const createSubscription = () => {
-    return prisma.userSubscription.create({
-      data: {
-        subscriber: {
-          connect: { email: user.email },
-        },
-        user: { connect: { email: user2.email } },
-      },
-    });
-  };
+  let user;
+  let collection;
+  let style;
 
   beforeEach(async () => {
     server = app.listen(0, () => {
       server.address().port;
     });
 
-    user = {
-      email: "test@email.com",
-      password: "password",
-    };
+    user = new User();
+    user.email = faker.internet.email();
+    user.password = faker.internet.password();
+    await user.save();
+    const { token } = await user.login();
+    header = { Authorization: `Bearer ${token}` };
 
-    user2 = {
-      email: "test2@email.com",
-    };
+    collection = new Collection();
+    collection.name = faker.commerce.product();
+    collection.description = faker.commerce.productDescription();
+    collection.authorId = user.id;
+    collection.tags = ["tag1", "tag2"];
+    await collection.save();
 
-    style = {
-      name: "name",
-      description: "description",
-      tags: ["tag1", "tag2"],
-      collection: "collectionId",
-    };
-
-    collection = {
-      name: "name",
-      description: "description",
-      tags: ["tag1", "tag2"],
-    };
-
-    token = await auth();
-    header = { authorization: `Bearer ${token}` };
+    style = new Style();
+    style.name = faker.commerce.productName();
+    style.description = faker.commerce.productDescription();
+    style.author = user.id;
+    style.tags = ["tag1", "tag2"];
+    style.collectionId = collection.id;
+    await style.save();
   });
 
   afterEach(async () => {
     await prisma.user.deleteMany();
+    await prisma.collection.deleteMany();
     await prisma.$disconnect();
     await server.close();
   });
 
   describe("GET /", () => {
-    it("Should return 404 if no user is found", async () => {
+    it("Should return 404_NOT_FOUND if no user is found", async () => {
+      await user.deleteMany();
       const res = await request(server).get("/api/user").set(header);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
     it("Should return 200 if token is valid", async () => {
-      await createUser();
       const res = await request(server).get("/api/user").set(header);
       expect(res.status).toBe(200);
     });
@@ -135,7 +71,6 @@ describe("User route", () => {
     });
 
     it("Should return 200 if user found", async () => {
-      user = await createUser();
       const res = await request(server).get(`/api/user/${user.id}`).set(header);
       expect(res.status).toBe(200);
     });
@@ -150,19 +85,19 @@ describe("User route", () => {
     });
 
     it("Should return 400 if already subscribed", async () => {
-      user.email = user2.email;
-      user = await createUser();
-      user.email = "test@email.com";
-      await createSubscription();
+      let user2 = new User();
+      user2.email = faker.internet.email();
+      user2.password = faker.internet.password();
+      user2 = await user.save();
+      await user.subscribeTo(user2.id);
       const res = await request(server)
-        .post(`/api/user/${user.id}/subscribe`)
+        .post(`/api/user/${user2.id}/subscribe`)
         .set(header);
 
       expect(res.status).toBe(400);
     });
 
     it("Should return 201 if subscription successful", async () => {
-      user = await createUser();
       const res = await request(server)
         .post(`/api/user/${user.id}/subscribe`)
         .set(header);
@@ -179,7 +114,6 @@ describe("User route", () => {
     });
 
     it("Should return 400 if not subscribed", async () => {
-      const user = await createUser();
       const res = await request(server)
         .delete(`/api/user/${user.id}/unsubscribe`)
         .set(header);
@@ -187,10 +121,13 @@ describe("User route", () => {
     });
 
     it("Should return 200 if unsubscribed", async () => {
-      const user = await createUser();
-      await createSubscription();
+      let user2 = new User();
+      user2.email = faker.internet.email();
+      user2.password = faker.internet.password();
+      user2 = await user.save();
+      await user.subscribeTo(user2.id);
       const res = await request(server)
-        .delete(`/api/user/${user.id}/unsubscribe`)
+        .delete(`/api/user/${user2.id}/unsubscribe`)
         .set(header);
       expect(res.status).toBe(200);
     });
@@ -198,7 +135,7 @@ describe("User route", () => {
 
   describe("GET /me", () => {
     it("should return 404 if user not found", async () => {
-      await prisma.user.deleteMany();
+      await user.delete(user.id);
       const res = await request(server).get("/api/user/me").set(header);
       expect(res.status).toBe(404);
     });
@@ -216,7 +153,6 @@ describe("User route", () => {
     });
 
     it("should return 404 if no style found", async () => {
-      user = await createUser();
       const res = await request(server)
         .get(`/api/${user.id}/style`)
         .set(header);
@@ -224,9 +160,6 @@ describe("User route", () => {
     });
 
     it("should return 200 if style found", async () => {
-      user = await createUser();
-      collection = await createCollection();
-      await createStyle(collection);
       const res = await request(server)
         .get(`/api/${user.id}/style`)
         .set(header);
@@ -243,7 +176,6 @@ describe("User route", () => {
     });
 
     it("should return 404 if no collection found", async () => {
-      user = await createUser();
       const res = await request(server)
         .get(`/api/${user.id}/collection`)
         .set(header);
@@ -251,8 +183,6 @@ describe("User route", () => {
     });
 
     it("should return 200 if style found", async () => {
-      user = await createUser();
-      await createCollection();
       const res = await request(server)
         .get(`/api/${user.id}/collection`)
         .set(header);
@@ -294,7 +224,7 @@ describe("User route", () => {
     beforeEach(() => {
       passwordReset = {
         password: user.password,
-        newpassword: "newPassword",
+        newpassword: faker.internet.password(),
       };
     });
 

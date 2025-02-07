@@ -11,7 +11,7 @@ describe("Brand route", () => {
   let comment;
   const auth = async () => {
     const res = await request(server).post("/api/auth/signup").send(user);
-    return res.body.token;
+    return res.body.login.token;
   };
 
   const createLogo = async () => {

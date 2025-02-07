@@ -135,12 +135,12 @@ model Style {
   name         String
   description  String
   published    Boolean         @default(false)
-  authorId     String?
   collectionId String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   favoritedBy  FavoriteStyle[]
   author       User?           @relation("UserAuthoredStyles", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId     String?
   collection   Collection?     @relation(fields: [collectionId], references: [id])
   StyleVote    StyleVote[]
   items        Item[]          @relation("StyleItem")
@@ -274,7 +274,7 @@ model CollectionVote {
   id           String     @id @default(cuid())
   userId       String
   collectionId String
-  vote         Int        @default(0)
+  vote         Boolean    @default(true)
   createdAt    DateTime   @default(now())
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -287,7 +287,7 @@ model StyleVote {
   id        String   @id @default(cuid())
   userId    String
   styleId   String
-  vote      Int      @default(0)
+  vote      Boolean  @default(true)
   createdAt DateTime @default(now())
   style     Style    @relation(fields: [styleId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -300,7 +300,7 @@ model ItemVote {
   id        String   @id @default(cuid())
   userId    String
   itemId    String
-  vote      Int      @default(0)
+  vote      Boolean  @default(true)
   createdAt DateTime @default(now())
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -313,7 +313,7 @@ model CommentVote {
   id        String   @id @default(cuid())
   userId    String
   commentId String
-  vote      Int      @default(0)
+  vote      Boolean  @default(true)
   createdAt DateTime @default(now())
   comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

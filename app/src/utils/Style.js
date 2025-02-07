@@ -8,7 +8,7 @@ class Style {
     this.name = style.name;
     this.description = style.description;
     this.tags = style.tags || [];
-    this.authorId = style.authorId;
+    this.author = style.author;
 
     this.selectedFields = {
       id: true,
@@ -17,10 +17,11 @@ class Style {
       collection: {
         select: {
           name: true,
+          id: true,
         },
       },
       author: {
-        select: { name: true },
+        select: { name: true, id: true },
       },
     };
   }
@@ -72,11 +73,13 @@ class Style {
                 })),
               },
             }),
-          collection: {
-            connect: {
-              id: collection,
+          ...(collection && {
+            collection: {
+              connect: {
+                id: collection,
+              },
             },
-          },
+          }),
           author: {
             connect: {
               id: author,

@@ -2,14 +2,17 @@ const express = require("express");
 const User = require("../utils/User");
 const Style = require("../utils/Style");
 const Collection = require("../utils/Collection");
+const { status } = require("http-status");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   let user = new User();
   let users = await user.findMany();
 
-  if (users.length == 1)
-    return res.status(404).json({ message: "No user found" });
+  if (!users.length)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ error: status[status.NOT_FOUND] });
 
   res.status(200).json({ users });
 });
@@ -138,6 +141,25 @@ router.get("/:user", async (req, res) => {
   if (!user) return res.status(404).json({ message: "User not found" });
 
   res.status(200).json({ user });
+});
+
+router.post("/refresh/token", async (req, res) => {
+  if (!req.body.token)
+    return res
+      .status(400)
+      .json({ message: "Please provide a valid refresh token" });
+
+  let user = new User();
+
+  const isValidToken = await user.verifyToken(req.body.token);
+
+  if (!isValidToken)
+    return res.status(400).json({ message: "Invalid refresh token" });
+
+  user.id = req.user.id;
+  const token = await user.generateAccessToken;
+
+  res.status(200).json({ token });
 });
 
 module.exports = router;

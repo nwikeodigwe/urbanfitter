@@ -1,6 +1,10 @@
 require("dotenv").config();
 const auth = require("./auth");
 const jwt = require("jsonwebtoken");
+const { status } = require("http-status");
+const { faker } = require("@faker-js/faker");
+
+jest.mock("jsonwebtoken");
 
 describe("Auth middleware", () => {
   let user;
@@ -11,9 +15,9 @@ describe("Auth middleware", () => {
 
   beforeEach(() => {
     user = {
-      id: 1,
-      name: "test",
-      email: "test@example.com",
+      id: 123,
+      name: faker.internet.username(),
+      email: faker.internet.email(),
     };
 
     token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
@@ -25,13 +29,13 @@ describe("Auth middleware", () => {
     };
 
     res = {
-      status: jest.fn(() => res),
+      status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
 
     next = jest.fn();
   });
-  it("Should return 401 if no token is provided", () => {
+  it("Should return 401_FORBIDDEN if no token is provided", () => {
     const req = {
       headers: {},
     };
@@ -39,20 +43,27 @@ describe("Auth middleware", () => {
 
     auth(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: "Access denied" });
+    expect(res.status).toHaveBeenCalledWith(status.UNAUTHORIZED);
+    expect(res.json).toHaveBeenCalledWith({
+      error: status[status.UNAUTHORIZED],
+    });
   });
 
-  it("Should return 403 if token is invalid", () => {
-    req = { headers: { authorization: "Bearer invalidtoken" } };
+  it("Should return 403_FORBIDDEN if token is invalid", () => {
+    req = {
+      headers: {
+        authorization: "Bearer invalidtoken",
+      },
+    };
 
     auth(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.status).toHaveBeenCalledWith(status.FORBIDDEN);
   });
 
   it("Should populate req.user with the payload of a valid JWT", () => {
     res = {};
+    jwt.verify.mockReturnValue(user);
 
     auth(req, res, next);
 

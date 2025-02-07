@@ -20,7 +20,9 @@ class Logger {
             this.logFormat
           ),
         }),
-        new winston.transports.File({ filename: "logs/logfile.log" }),
+        new winston.transports.File({
+          filename: "logs/info.log",
+        }),
       ],
     });
 
@@ -29,7 +31,9 @@ class Logger {
 
   initializeLogging() {
     winston.exceptions.handle(
-      new winston.transports.File({ filename: "logs/uncaughtExceptions.log" })
+      new winston.transports.File({
+        filename: "logs/error.log",
+      })
     );
 
     process.on("unhandledRejection", (ex) => {

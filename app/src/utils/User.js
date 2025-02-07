@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const rug = require("random-username-generator");
 const Mail = require("./Mail");
 
 const prisma = new PrismaClient();
@@ -23,7 +24,7 @@ class User {
   }
 
   async save(user = {}) {
-    const name = user.name || this.name;
+    let name = user.name || this.name;
     const email = user.email || this.email;
     const password = user.password || this.password;
     let usr;
@@ -41,8 +42,9 @@ class User {
         select: this.selectedFields,
       });
     } else {
+      name = rug.generate(email.split("@")[0]);
       usr = await prisma.user.create({
-        data: userData,
+        data: { ...userData, name },
         select: this.selectedFields,
       });
       this.id = usr.id;
@@ -169,12 +171,13 @@ class User {
     return bcrypt.compare(password, passwordHash);
   }
 
-  async createToken(user = {}) {
+  async generateAccessToken(user = {}, secret = process.env.JWT_SECRET) {
     const usr = await this.find();
 
     const id = user.id || this.id || usr.id;
     const name = user.name || this.name || usr.name;
     const email = user.email || this.email;
+
     return jwt.sign(
       {
         id,
@@ -184,6 +187,29 @@ class User {
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
+  }
+
+  async generateRefreshToken(
+    user = {},
+    secret = process.env.JWT_REFRESH_SECRET
+  ) {
+    const usr = await this.find();
+
+    const id = user.id || this.id || usr.id;
+    return jwt.sign({ id }, secret, {
+      expiresIn: "7d",
+    }); // Should be process.env.JWT_REFRESH_SECRET
+  }
+
+  verifyToken(token, secret = process.env.JWT_SECRET) {
+    return jwt.verify(token, secret);
+  }
+
+  async login() {
+    const token = await this.generateAccessToken();
+    const refresh = await this.generateRefreshToken();
+
+    return { token, refresh };
   }
 
   mail(template, user = {}, attr = {}) {
@@ -251,13 +277,17 @@ class User {
     });
   }
 
-  delete() {
+  delete(id = this.id) {
     return prisma.user.delete({
       where: {
-        id: this.id,
+        id,
       },
       select: this.selectedFields,
     });
+  }
+
+  deleteMany() {
+    return prisma.user.deleteMany();
   }
 }
 

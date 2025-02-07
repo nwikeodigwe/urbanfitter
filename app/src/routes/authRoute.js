@@ -1,6 +1,5 @@
 const express = require("express");
 const passport = require("passport");
-const rug = require("random-username-generator");
 const mailconf = require("../config/mailconf");
 const User = require("../utils/User");
 const router = express.Router();
@@ -12,7 +11,6 @@ router.post("/signup", async (req, res) => {
   let user = new User();
   user.email = req.body.email;
   user.password = req.body.password;
-  user.name = rug.generate(req.body.email.split("@")[0]);
 
   let userExits = await user.find();
 
@@ -22,9 +20,9 @@ router.post("/signup", async (req, res) => {
   await user.save();
   await user.mail(mailconf.welcome);
 
-  const token = await user.createToken();
+  const login = await user.login();
 
-  res.status(200).json({ token });
+  res.status(200).json({ login });
 });
 
 router.post("/signin", async (req, res) => {
@@ -43,9 +41,9 @@ router.post("/signin", async (req, res) => {
 
   if (!password) return res.status(400).json({ message: "Invalid password" });
 
-  const token = await user.createToken();
+  const login = await user.login();
 
-  res.json({ token });
+  res.json({ login });
 });
 
 router.get(

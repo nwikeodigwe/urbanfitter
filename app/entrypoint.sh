@@ -12,7 +12,7 @@ fi
 echo "Running migrations..."
 RETRY_COUNT=0
 
-until npx prisma migrate dev; do
+until echo "yes" | npx prisma migrate dev; do
   echo "Migration failed. Retrying in $RETRY_DELAY seconds..."
   RETRY_COUNT=$((RETRY_COUNT + 1))
   if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
