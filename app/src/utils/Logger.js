@@ -3,27 +3,28 @@ require("express-async-errors");
 
 class Logger {
   constructor() {
-    this.logFormat = winston.format.combine(
+    const format = winston.format.combine(
       winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
       winston.format.json(),
       winston.format.printf(
         (info) => `${info.timestamp} ${info.level}: ${info.message}`
       )
     );
+    const transports = [
+      new winston.transports.File({ filename: "logs/info.log" }),
+    ];
+
+    if (process.env.NODE_ENV === "debug")
+      transports.push(
+        new winston.transports.Console({
+          format: winston.format.combine(winston.format.colorize(), format),
+        })
+      );
+
     this.logger = winston.createLogger({
       level: "info",
-      format: this.logFormat,
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            this.logFormat
-          ),
-        }),
-        new winston.transports.File({
-          filename: "logs/info.log",
-        }),
-      ],
+      format,
+      transports,
     });
 
     this.initializeLogging();
