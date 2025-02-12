@@ -47,6 +47,6 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           cd app
-          npm ci
+          npm install
           echo "yes" | npx prisma migrate dev
           npx jest --verbose
