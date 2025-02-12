@@ -17,13 +17,20 @@ jobs:
       matrix:
         node-version: [20, 21]
 
-    services:
     env:
       CI: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -40,6 +47,6 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           cd app
-          npm install
+          npm ci
           echo "yes" | npx prisma migrate dev
           npx jest --verbose
