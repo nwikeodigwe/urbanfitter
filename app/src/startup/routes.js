@@ -18,7 +18,6 @@ module.exports = (app) => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(passport.initialize());
-  app.use(morgan);
   app.use("/api/auth", authRoute);
   app.use(auth);
   app.use("/api/user", userRoute);
@@ -27,4 +26,5 @@ module.exports = (app) => {
   app.use("/api/style", styleRoute);
   app.use("/api/item", itemRoute);
   app.use(error);
+  app.use(morgan);
 };

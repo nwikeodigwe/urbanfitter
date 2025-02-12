@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Collection {
   constructor(collection = {}) {
@@ -18,57 +16,71 @@ class Collection {
   }
 
   async save(collection = {}) {
-    let collect;
+    this.name = collection.name || this.name;
+    this.description = collection.description || this.description;
+    this.tags = collection.tags || this.tags;
+    this.id = collection.id || this.id;
+    this.authorId = collection.authorId || this.authorId;
+
+    collection = await this.find();
+
+    return collection ? this.update() : this.create();
+  }
+
+  async create(collection = {}) {
     const name = collection.name || this.name;
     const description = collection.description || this.description;
     const tags = collection.tags || this.tags;
-    const id = collection.id || this.id;
     const authorId = collection.authorId || this.authorId;
 
-    const collectionData = {
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(id && { id }),
-      ...(tags && { tags }),
-    };
+    collection = await prisma.collection.create({
+      data: {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+        ...(tags && tags.length > 0
+          ? {
+              tags: {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              },
+            }
+          : {}),
+        author: { connect: { id: authorId } },
+      },
+      select: this.selectedFields,
+    });
 
-    if (this.id) {
-      collect = await prisma.collection.update({
-        where: { id: this.id },
-        data: {
-          ...collectionData,
-          ...(tags &&
-            tags.length > 0 && {
-              tags: {
-                connectOrCreate: tags.map((tag) => ({
-                  where: { name: tag },
-                  create: { name: tag },
-                })),
-              },
-            }),
-        },
-        select: this.selectedFields,
-      });
-    } else {
-      collect = await prisma.collection.create({
-        data: {
-          ...collectionData,
-          ...(tags &&
-            tags.length > 0 && {
-              tags: {
-                connectOrCreate: tags.map((tag) => ({
-                  where: { name: tag },
-                  create: { name: tag },
-                })),
-              },
-            }),
-          author: { connect: { id: authorId } },
-        },
-        select: this.selectedFields,
-      });
-      this.id = collect.id;
-    }
-    return collect;
+    this.id = collection.id;
+    return collection;
+  }
+
+  async update(collection = {}) {
+    const id = collection.id || this.id;
+    const name = collection.name || this.name;
+    const description = collection.description || this.description;
+    const tags = collection.tags || this.tags;
+
+    collection = await prisma.collection.update({
+      where: { id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+        ...(tags &&
+          tags.length > 0 && {
+            tags: {
+              connectOrCreate: tags.map((tag) => ({
+                where: { name: tag },
+                create: { name: tag },
+              })),
+            },
+          }),
+      },
+      select: this.selectedFields,
+    });
+
+    return collection;
   }
 
   find(collection = {}) {

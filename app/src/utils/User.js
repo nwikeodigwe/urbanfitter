@@ -1,11 +1,8 @@
-const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const rug = require("random-username-generator");
-const Mail = require("./Mail");
-
-const prisma = new PrismaClient();
-const mail = new Mail();
+const prisma = require("../functions/prisma");
+const mail = require("./Mail");
 
 class User {
   constructor(user = {}) {
@@ -24,32 +21,46 @@ class User {
   }
 
   async save(user = {}) {
-    let name = user.name || this.name;
+    this.email = user.email || this.email;
+    this.password = user.password || this.password;
+    this.name = user.name || this.name;
+    const id = user.id || this.id;
+
+    user = await this.find({ id, email: this.email });
+
+    return user ? this.update() : this.create();
+  }
+
+  async create(user = {}) {
     const email = user.email || this.email;
     const password = user.password || this.password;
-    let usr;
+    const name = rug.generate(email.split("@")[0]);
 
-    const userData = {
-      ...(name && { name }),
-      ...(email && { email }),
-      ...(password && { password: bcrypt.hashSync(password, 10) }),
-    };
+    user = await prisma.user.create({
+      data: { name, email, password: bcrypt.hashSync(password, 10) },
+      select: this.selectedFields,
+    });
 
-    if (this.id) {
-      usr = await prisma.user.update({
-        where: { id: this.id },
-        data: userData,
-        select: this.selectedFields,
-      });
-    } else {
-      name = rug.generate(email.split("@")[0]);
-      usr = await prisma.user.create({
-        data: { ...userData, name },
-        select: this.selectedFields,
-      });
-      this.id = usr.id;
-    }
-    return usr;
+    this.id = user.id;
+    return user;
+  }
+
+  async update(user = {}) {
+    const email = user.email || this.email;
+    const password = user.password || this.password;
+    const name = user.name || this.name;
+
+    user = await prisma.user.update({
+      where: { id: this.id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(email ? { email } : {}),
+        ...(password ? { password: bcrypt.hashSync(password, 10) } : {}),
+      },
+      select: this.selectedFields,
+    });
+
+    return user;
   }
 
   find(user = {}) {
@@ -172,19 +183,19 @@ class User {
   }
 
   async generateAccessToken(user = {}, secret = process.env.JWT_SECRET) {
-    const usr = await this.find();
+    this.id = user.id || this.id;
+    user = await this.find();
 
-    const id = user.id || this.id || usr.id;
-    const name = user.name || this.name || usr.name;
+    const name = user.name || this.name;
     const email = user.email || this.email;
 
     return jwt.sign(
       {
-        id,
+        id: this.id,
         name,
         email,
       },
-      process.env.JWT_SECRET,
+      secret,
       { expiresIn: "1h" }
     );
   }
@@ -193,10 +204,9 @@ class User {
     user = {},
     secret = process.env.JWT_REFRESH_SECRET
   ) {
-    const usr = await this.find();
-
-    const id = user.id || this.id || usr.id;
-    return jwt.sign({ id }, secret, {
+    this.id = user.id || this.id;
+    user = await this.find();
+    return jwt.sign({ id: this.id }, secret, {
       expiresIn: "7d",
     }); // Should be process.env.JWT_REFRESH_SECRET
   }
@@ -236,32 +246,41 @@ class User {
   }
 
   async createResetToken() {
-    await prisma.reset.updateMany({
-      where: { user: { email: this.email }, expires: { lte: new Date() } },
-      data: { expires: new Date() },
-    });
+    await this.#resetAllToken();
 
     const salt = await bcrypt.genSalt(10);
-    const token = salt.substr(20);
+    const token = salt
+      .substr(20)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9]/g, "");
 
-    await prisma.reset.create({
+    return prisma.reset.create({
       data: {
-        token: token.toString(),
+        token: token,
         expires: new Date(Date.now() + 600000),
         user: { connect: { email: this.email } },
+      },
+      select: {
+        token: true,
       },
     });
   }
 
+  #resetAllToken() {
+    return prisma.reset.updateMany({
+      where: { user: { email: this.email }, expires: { lte: new Date() } },
+      data: { expires: new Date() },
+    });
+  }
+
   async isValidResetToken() {
-    const reset = await prisma.reset.findUnique({
+    const reset = await prisma.reset.findFirst({
       where: { token: this.resetToken },
-      select: { id: true },
+      select: { id: true, user: { select: { id: true } } },
     });
 
-    if (!reset) return false;
-
-    if (reset.expires < new Date()) return false;
+    return !reset || reset.expires < new Date() ? false : reset;
   }
 
   updateProfile(data = {}) {

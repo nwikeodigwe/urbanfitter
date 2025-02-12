@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Image {
   constructor(image = {}) {
@@ -12,9 +10,8 @@ class Image {
     };
   }
 
-  async save(url) {
+  async save(url = this.url) {
     let img;
-    const url = url || this.url;
     const imageData = {
       ...(url && { url }),
     };

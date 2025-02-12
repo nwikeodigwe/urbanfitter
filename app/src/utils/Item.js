@@ -1,14 +1,13 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Item {
   constructor(item = {}) {
     this.item = {};
     this.id = item.id || null;
-    this.title = item.title || null;
+    this.name = item.name || null;
     this.description = item.description || null;
     this.images = item.images || null;
+    this.tags = item.tags || null;
     this.brand = item.brand || null;
     this.userId = item.userId || null;
     this.selectedFields = {
@@ -16,6 +15,7 @@ class Item {
       name: true,
       description: true,
       images: true,
+      tags: true,
       creator: { select: { id: true } },
     };
   }
@@ -88,9 +88,9 @@ class Item {
                 })),
               },
             }),
-          ...(creator && {
-            creator: { connect: { id: creator } },
-          }),
+          // ...(creator && {
+          //   creator: { connect: { id: creator } },
+          // }),
           ...(images && {
             images: {
               connect: images.map((image) => ({
@@ -266,6 +266,10 @@ class Item {
         id,
       },
     });
+  }
+
+  deleteMany() {
+    return prisma.item.deleteMany();
   }
 }
 

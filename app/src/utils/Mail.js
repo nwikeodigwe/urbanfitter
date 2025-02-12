@@ -57,4 +57,4 @@ class Mail {
   }
 }
 
-module.exports = Mail;
+module.exports = new Mail();

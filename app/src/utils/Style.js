@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Style {
   constructor(style = {}) {
@@ -27,14 +25,14 @@ class Style {
   }
 
   async save(style = {}) {
-    let styl;
     const name = style.name || this.name;
     const description = style.description || this.description;
     const tags = style.tags || this.tags;
     const author = style.author || this.author;
     const collection = style.collection || this.collection;
+    let stle;
 
-    const styleData = {
+    let styleData = {
       ...(name && { name }),
       ...(description && { description }),
       ...(author && { author }),
@@ -42,7 +40,7 @@ class Style {
     };
 
     if (this.id) {
-      styl = await prisma.style.update({
+      stle = await prisma.style.update({
         where: { id: this.id },
         data: {
           ...(name && { name }),
@@ -61,7 +59,7 @@ class Style {
         select: this.selectedFields,
       });
     } else {
-      styl = await prisma.style.create({
+      stle = await prisma.style.create({
         data: {
           ...styleData,
           ...(tags &&
@@ -89,7 +87,8 @@ class Style {
         select: this.selectedFields,
       });
     }
-    return styl;
+    this.id = stle.id;
+    return stle;
   }
 
   find(style = {}) {

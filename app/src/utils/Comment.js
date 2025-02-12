@@ -1,11 +1,13 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Comment {
   constructor(comment = {}) {
-    this.id = comment.id;
-    this.entity = comment.entity;
+    this.id = comment.id || null;
+    this.content = comment.content || null;
+    this.entity = comment.entity || null;
+    this.entityId = comment.entityId || null;
+    this.tags = comment.tags || null;
+    this.userId = comment.userId || null;
     this.selectedFields = {
       id: true,
       author: { select: { id: true, name: true } },
@@ -13,13 +15,19 @@ class Comment {
     };
   }
 
-  save(comment = {}) {
-    return prisma.comment.create({
+  async save(comment = {}) {
+    const content = comment.content || this.content;
+    const entity = comment.entity || this.entity;
+    const tags = comment.tags || this.tags;
+    const userId = comment.userId || this.userId;
+    const entityId = comment.entityId || this.entityId;
+
+    let commnt = await prisma.comment.create({
       data: {
-        content: comment.content,
-        ...(comment.tags && {
+        content,
+        ...(tags && {
           tag: {
-            connectOrCreate: comment.tags.map((tag) => ({
+            connectOrCreate: tags.map((tag) => ({
               where: { name: tag },
               create: { name: tag },
             })),
@@ -27,17 +35,20 @@ class Comment {
         }),
         author: {
           connect: {
-            id: comment.userId,
+            id: userId,
           },
         },
-        entity: comment.entity,
-        entityId: comment.entityId,
+        entity,
+        entityId,
         ...(this.id && {
           parent: { connect: { id: this.id } },
         }),
       },
       select: this.selectedFields,
     });
+
+    this.id = commnt.id;
+    return commnt;
   }
 
   find(id = this.id) {

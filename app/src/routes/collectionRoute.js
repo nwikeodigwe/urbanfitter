@@ -1,16 +1,19 @@
 const express = require("express");
 const Collection = require("../utils/Collection");
 const Style = require("../utils/Style");
+const { status } = require("http-status");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   if (!req.body.name || !req.body.description)
     return res
-      .status(400)
-      .json({ message: "name and description is required" });
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   if (req.body.tags && !Array.isArray(req.body.tags))
-    return res.status(400).json({ message: "tags must be an array" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let collectionData = {};
 
@@ -31,7 +34,9 @@ router.post("/", async (req, res) => {
   let collection = new Collection();
   collection = await collection.save(collectionData);
 
-  res.status(201).json({ collection });
+  res
+    .status(status.CREATED)
+    .json({ message: status[status.CREATED], data: collection });
 });
 
 router.get("/", async (req, res) => {
@@ -39,9 +44,11 @@ router.get("/", async (req, res) => {
   collections = await collections.findMany();
 
   if (!collections.length)
-    return res.status(404).json({ message: "No collection found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ collections });
+  res.status(status.OK).json({ message: status[status.OK], data: collections });
 });
 
 router.get("/:collection", async (req, res) => {
@@ -50,9 +57,11 @@ router.get("/:collection", async (req, res) => {
   collection = await collection.find();
 
   if (!collection)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ collection });
+  res.status(status.OK).json({ message: status[status.OK], data: collection });
 });
 
 router.get("/:collection/styles", async (req, res) => {
@@ -61,9 +70,11 @@ router.get("/:collection/styles", async (req, res) => {
   styles = await styles.findMany();
 
   if (!styles.length)
-    return res.status(404).json({ message: "No style found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ styles });
+  res.status(status.OK).json({ message: status[status.OK], data: styles });
 });
 
 router.post("/:collection/favorite", async (req, res) => {
@@ -72,11 +83,15 @@ router.post("/:collection/favorite", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   let favorite = await collection.favorite(req.user.id);
 
-  res.status(201).json({ favorite });
+  res
+    .status(status.CREATED)
+    .json({ message: status[status.CREATED], data: favorite });
 });
 
 router.delete("/:collection/unfavorite", async (req, res) => {
@@ -85,16 +100,20 @@ router.delete("/:collection/unfavorite", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   let favorite = await collection.isFavorited(req.user.id);
 
   if (!favorite)
-    return res.status(404).json({ message: "Collection is not favorited" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await collection.unfavorite(req.user.id);
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 router.put("/:collection/upvote", async (req, res) => {
@@ -103,11 +122,15 @@ router.put("/:collection/upvote", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const upvote = await collection.upvote(req.user.id);
 
-  res.status(200).json({ upvote });
+  res
+    .status(status.OK)
+    .json({ message: status[status.BAD_REQUEST], data: upvote });
 });
 
 router.put("/:collection/downvote", async (req, res) => {
@@ -116,11 +139,13 @@ router.put("/:collection/downvote", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const downvote = await collection.downvote(req.user.id);
 
-  res.status(200).json({ downvote });
+  res.status(status.OK).json({ message: status[status.OK], data: downvote });
 });
 
 router.delete("/:collection/unvote", async (req, res) => {
@@ -129,15 +154,20 @@ router.delete("/:collection/unvote", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const vote = await collection.isVoted(req.user.id);
 
-  if (!vote) return res.status(404).json({ message: "Vote not found" });
+  if (!vote)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await collection.unvote(req.user.id);
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 router.patch("/:collection", async (req, res) => {
@@ -146,10 +176,14 @@ router.patch("/:collection", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   if (req.body.tags && !Array.isArray(req.body.tags))
-    return res.status(400).json({ message: "tags must be an array" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let collectionData = { ...req.body };
   if (req.body.tags && req.body.tags.length > 0)
@@ -162,7 +196,7 @@ router.patch("/:collection", async (req, res) => {
 
   collection = collection.save(collectionData);
 
-  res.status(200).json({ collection });
+  res.status(status.OK).json({ message: status[status.OK], data: collection });
 });
 
 router.delete("/:collection", async (req, res) => {
@@ -171,11 +205,13 @@ router.delete("/:collection", async (req, res) => {
   let collectionExists = await collection.find();
 
   if (!collectionExists)
-    return res.status(404).json({ message: "Collection not found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await collection.delete();
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 module.exports = router;

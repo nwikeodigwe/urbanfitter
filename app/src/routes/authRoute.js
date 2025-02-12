@@ -1,12 +1,14 @@
 const express = require("express");
-const passport = require("passport");
 const mailconf = require("../config/mailconf");
 const User = require("../utils/User");
+const { status } = require("http-status");
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
   if (!req.body.email || !req.body.password)
-    return res.status(400).json({ message: "Email and password required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let user = new User();
   user.email = req.body.email;
@@ -15,19 +17,23 @@ router.post("/signup", async (req, res) => {
   let userExits = await user.find();
 
   if (userExits)
-    return res.status(400).json({ message: "User already exists" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   await user.save();
   await user.mail(mailconf.welcome);
 
   const login = await user.login();
 
-  res.status(200).json({ login });
+  return res.status(status.OK).json({ login });
 });
 
 router.post("/signin", async (req, res) => {
   if (!req.body.email || !req.body.password)
-    return res.status(400).json({ message: "Email and password required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let user = new User();
   user.email = req.body.email;
@@ -35,58 +41,50 @@ router.post("/signin", async (req, res) => {
 
   let usr = await user.find();
 
-  if (!usr) return res.status(404).json({ message: "User not found" });
+  if (!usr)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const password = await user.passwordMatch();
 
-  if (!password) return res.status(400).json({ message: "Invalid password" });
+  if (!password)
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   const login = await user.login();
 
-  res.json({ login });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.BAD_REQUEST], data: login });
 });
-
-router.get(
-  "/facebook",
-  passport.authenticate("facebook", { scope: ["email"] })
-);
-
-router.get(
-  "/facebook/callback",
-  passport.authenticate("facebook", { failureRedirect: "/" }),
-  (req, res) => {
-    const token = jwt.sign(
-      {
-        id: req.user.id,
-        name: req.user.displayName,
-        email: (req.user.emails && req.user.emails[0].value) || null,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({ token });
-  }
-);
 
 router.post("/reset", async (req, res) => {
   if (!req.body.email)
-    return res.status(400).json({ message: "Email required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let user = new User();
   user.email = req.body.email;
-  let usr = await user.find();
+  let userExits = await user.find();
 
-  if (!usr) return res.status(404).json({ message: "User not found" });
+  if (!userExits)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await user.createResetToken();
 
-  res.status(200).end();
+  return res.status(status.OK).end();
 });
 
 router.post("/reset/:token", async (req, res) => {
   if (!req.params.token || !req.body.password)
-    return res.status(400).json({ message: "Token and password required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let user = new User();
   user.resetToken = req.params.token;
@@ -94,15 +92,20 @@ router.post("/reset/:token", async (req, res) => {
   const isValidResetToken = await user.isValidResetToken();
 
   if (!isValidResetToken)
-    return res.status(400).json({ message: "Invalid reset token" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   user.password = req.body.password;
+  user.id = isValidResetToken.user.id;
 
   await user.save();
 
-  token = await user.createToken();
+  login = await user.login();
 
-  res.status(200).json({ token });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.OK], data: login });
 });
 
 module.exports = router;

@@ -1,6 +1,4 @@
-const Mail = require("../utils/Mail");
-
-const mail = new Mail();
+const mail = require("../utils/Mail");
 
 module.exports = {
   welcome: mail.WELCOME,

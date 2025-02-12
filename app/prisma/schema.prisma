@@ -87,12 +87,12 @@ model Brand {
   id                String              @id @default(cuid())
   name              String              @unique
   description       String?
-  logoId            String?             @unique
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
-  ownerId           String?
   logo              Logo?               @relation(fields: [logoId], references: [id])
+  logoId            String?             @unique
   owner             User?               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId           String?
   BrandSubscription BrandSubscription[]
   BrandVote         BrandVote[]
   favoritedBy       FavoriteBrand[]

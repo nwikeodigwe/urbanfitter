@@ -1,19 +1,24 @@
 const express = require("express");
 const Item = require("../utils/Item");
 const User = require("../utils/User");
+const { status } = require("http-status");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   if (!req.body.name || !req.body.description)
     return res
-      .status(400)
-      .json({ message: "Name and description is required" });
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   if (!Array.isArray(req.body.images) || req.body.images.length === 0)
-    return res.status(400).json({ message: "At least one image is required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   if (req.body.tags && !Array.isArray(req.body.tags))
-    return res.status(400).json({ message: "Tags must be an array" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let itemData = { ...req.body };
 
@@ -26,7 +31,9 @@ router.post("/", async (req, res) => {
     );
 
   if (!req.body.brand)
-    return res.status(400).json({ message: "Brand is required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   itemData.brand = req.body.brand
     .trim()
@@ -37,7 +44,10 @@ router.post("/", async (req, res) => {
     let creator = new User();
     creator = await creator.find({ id: req.body.creator });
 
-    if (!creator) return res.status(404).json({ message: "Creator not found" });
+    if (!creator)
+      return res
+        .status(status.NOT_FOUND)
+        .json({ message: status[status.NOT_FOUND], data: {} });
 
     itemData.creator = creator.id;
   }
@@ -45,16 +55,21 @@ router.post("/", async (req, res) => {
   let item = new Item();
   item = await item.save(itemData);
 
-  res.status(201).json({ item });
+  res
+    .status(status.CREATED)
+    .json({ message: status[status.CREATED], data: item });
 });
 
 router.get("/", async (req, res) => {
   let items = new Item();
   items = await items.findMany();
 
-  if (!items.length) return res.status(404).json({ message: "No item found" });
+  if (!items.length)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ items });
+  res.status(status.OK).json({ message: status[status.OK], data: items });
 });
 
 router.get("/:item", async (req, res) => {
@@ -62,9 +77,12 @@ router.get("/:item", async (req, res) => {
   item.id = req.params.item;
   item = await item.find();
 
-  if (!item) return res.status(404).json({ message: "Item not found" });
+  if (!item)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ item });
+  res.status(status.OK).json({ message: status[status.OK], data: item });
 });
 
 router.post("/:item/favorite", async (req, res) => {
@@ -72,11 +90,16 @@ router.post("/:item/favorite", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const favorite = await item.favorite(req.user.id);
 
-  res.status(201).json({ favorite });
+  res
+    .status(status.CREATED)
+    .json({ message: status[status.CREATED], data: favorite });
 });
 
 router.delete("/:item/unfavorite", async (req, res) => {
@@ -84,16 +107,21 @@ router.delete("/:item/unfavorite", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   let favorite = await item.isFavorited(req.user.id);
 
   if (!favorite)
-    return res.status(400).json({ message: "item is not favorited" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   await item.unfavorite(req.user.id);
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 router.put("/:item/upvote", async (req, res) => {
@@ -101,11 +129,14 @@ router.put("/:item/upvote", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "Item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const upvote = await item.upvote(req.user.id);
 
-  res.status(200).json({ upvote });
+  res.status(status.OK).json({ message: status[status.OK], data: upvote });
 });
 
 router.put("/:item/downvote", async (req, res) => {
@@ -113,11 +144,14 @@ router.put("/:item/downvote", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "Item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   const downvote = await item.downvote(req.user.id);
 
-  res.status(200).json({ downvote });
+  res.status(status.OK).json({ message: status.OK, data: downvote });
 });
 
 router.delete("/:item/unvote", async (req, res) => {
@@ -125,11 +159,14 @@ router.delete("/:item/unvote", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "Item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await item.unvote(req.user.id);
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 router.patch("/:item", async (req, res) => {
@@ -137,10 +174,14 @@ router.patch("/:item", async (req, res) => {
     req.body.images &&
     (!Array.isArray(req.body.images) || req.body.images.length === 0)
   )
-    return res.status(400).json({ message: "At least one image is required" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status.BAD_REQUEST, data: {} });
 
   if (req.body.tags && !Array.isArray(req.body.tags))
-    return res.status(400).json({ message: "Tags must be an array" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let itemData = { ...req.body };
 
@@ -156,11 +197,14 @@ router.patch("/:item", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "Item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   item = await item.save(itemData);
 
-  res.status(200).json({ item });
+  res.status(status.OK).json({ message: status[status.OK], data: item });
 });
 
 router.delete("/:item", async (req, res) => {
@@ -168,11 +212,14 @@ router.delete("/:item", async (req, res) => {
   item.id = req.params.item;
   let itemExists = await item.find();
 
-  if (!itemExists) return res.status(404).json({ message: "Item not found" });
+  if (!itemExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   await item.delete();
 
-  res.status(204).end();
+  res.status(status.NO_CONTENT).end();
 });
 
 module.exports = router;

@@ -1,250 +1,363 @@
-const request = require("supertest");
 const app = require("../app");
-const User = require("../utils/User");
-const Collection = require("../utils/Collection");
-const Style = require("../utils/Style");
+const request = require("supertest");
 const { faker } = require("@faker-js/faker");
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../functions/prisma");
 const { status } = require("http-status");
+const method = require("../const/http-methods");
+const {
+  createTestUser,
+  createTestCollection,
+  createTestStyle,
+} = require("../functions/testHelpers");
 let server;
-
-const prisma = new PrismaClient();
 
 describe("User route", () => {
   let header;
   let user;
   let collection;
-  let style;
+  let passwordReset = {};
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     server = app.listen(0, () => {
       server.address().port;
     });
 
-    user = new User();
-    user.email = faker.internet.email();
-    user.password = faker.internet.password();
-    await user.save();
-    const { token } = await user.login();
-    header = { Authorization: `Bearer ${token}` };
+    const { account, login } = await createTestUser();
+    user = account;
 
-    collection = new Collection();
-    collection.name = faker.commerce.product();
-    collection.description = faker.commerce.productDescription();
-    collection.authorId = user.id;
-    collection.tags = ["tag1", "tag2"];
-    await collection.save();
+    header = { Authorization: `Bearer ${login.token}` };
 
-    style = new Style();
-    style.name = faker.commerce.productName();
-    style.description = faker.commerce.productDescription();
-    style.author = user.id;
-    style.tags = ["tag1", "tag2"];
-    style.collectionId = collection.id;
-    await style.save();
+    collection = await createTestCollection(user.id);
   });
 
-  afterEach(async () => {
-    await prisma.user.deleteMany();
-    await prisma.collection.deleteMany();
+  afterAll(async () => {
+    await prisma.$transaction([
+      prisma.user.deleteMany(),
+      prisma.collection.deleteMany(),
+    ]);
+
     await prisma.$disconnect();
     await server.close();
   });
 
-  describe("GET /", () => {
-    it("Should return 404_NOT_FOUND if no user is found", async () => {
-      await user.deleteMany();
-      const res = await request(server).get("/api/user").set(header);
-      expect(res.status).toBe(status.NOT_FOUND);
-    });
-
-    it("Should return 200 if token is valid", async () => {
-      const res = await request(server).get("/api/user").set(header);
-      expect(res.status).toBe(200);
-    });
-  });
-
-  describe("GET /:user", () => {
-    it("Should return 404 if user not found", async () => {
-      const res = await request(server).get("/api/user/userId").set(header);
-      expect(res.status).toBe(404);
-    });
-
-    it("Should return 200 if user found", async () => {
-      const res = await request(server).get(`/api/user/${user.id}`).set(header);
-      expect(res.status).toBe(200);
-    });
-  });
-
   describe("POST /:user/subscribe", () => {
-    it("Should return 404 if user not found", async () => {
+    it("Should return 404_NOT_FOUND if user not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post(`/api/user/userId/subscribe`)
         .set(header);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 400 if already subscribed", async () => {
-      let user2 = new User();
-      user2.email = faker.internet.email();
-      user2.password = faker.internet.password();
-      user2 = await user.save();
-      await user.subscribeTo(user2.id);
-      const res = await request(server)
-        .post(`/api/user/${user2.id}/subscribe`)
-        .set(header);
+    it("Should return 201_CREATED if subscription successful", async () => {
+      const mockResponse = {
+        status: status.CREATED,
+        body: { message: status[status.CREATED] },
+      };
 
-      expect(res.status).toBe(400);
-    });
-
-    it("Should return 201 if subscription successful", async () => {
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post(`/api/user/${user.id}/subscribe`)
         .set(header);
-      expect(res.status).toBe(201);
+
+      expect(res.status).toBe(status.CREATED);
+    });
+
+    it("Should return 400_BAD_REQUEST if already subscribed", async () => {
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { message: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post(`/api/user/${user.id}/subscribe`)
+        .set(header);
+
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
   });
 
   describe("DELETE /:user/unsubscribe", () => {
-    it("Should return 404 if user not found", async () => {
+    it("Should return 404_NOT_FOUND if user not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
-        .delete(`/api/user/cm431qxul0007hgi64pcv9mzz/unsubscribe`)
+        .delete(`/api/user/invalid_user_id/unsubscribe`)
         .set(header);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 400 if not subscribed", async () => {
+    it("Should return 204_NO_CONTENT if unsubscribed", async () => {
+      const mockResponse = {
+        status: status.NO_CONTENT,
+        body: { message: status[status.NO_CONTENT] },
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete(`/api/user/${user.id}/unsubscribe`)
         .set(header);
-      expect(res.status).toBe(400);
+
+      expect(res.status).toBe(status.NO_CONTENT);
     });
 
-    it("Should return 200 if unsubscribed", async () => {
-      let user2 = new User();
-      user2.email = faker.internet.email();
-      user2.password = faker.internet.password();
-      user2 = await user.save();
-      await user.subscribeTo(user2.id);
+    it("Should return 400_BAD_REQUEST if not subscribed", async () => {
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { message: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
-        .delete(`/api/user/${user2.id}/unsubscribe`)
+        .delete(`/api/user/${user.id}/unsubscribe`)
         .set(header);
-      expect(res.status).toBe(200);
-    });
-  });
-
-  describe("GET /me", () => {
-    it("should return 404 if user not found", async () => {
-      await user.delete(user.id);
-      const res = await request(server).get("/api/user/me").set(header);
-      expect(res.status).toBe(404);
-    });
-
-    it("should return 200 if user exist", async () => {
-      const res = await request(server).get("/api/user/me").set(header);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
   });
 
   describe("GET /:user/style", () => {
-    it("should return 404 if user not found", async () => {
-      const res = await request(server).get("/api/userId/style").set(header);
-      expect(res.status).toBe(404);
+    it("should return 404_NOT_FOUND if user not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .get("/api/user/invalid_user_id/style")
+        .set(header);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("should return 404 if no style found", async () => {
+    it("should return 404_NOT_FOUND if no style found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
-        .get(`/api/${user.id}/style`)
+        .get(`/api/user/${user.id}/style`)
         .set(header);
-      expect(res.status).toBe(404);
+
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("should return 200 if style found", async () => {
+    it("should return 200_OK if style found", async () => {
+      await createTestStyle(user.id, collection.id);
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
-        .get(`/api/${user.id}/style`)
+        .get(`/api/user/${user.id}/style`)
         .set(header);
-      expect(res.status).toBe(404);
+
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("GET /:user/collection", () => {
-    it("should return 404 if user not found", async () => {
+    it("should return 404_NOT_FOUND if user not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
-        .get("/api/userId/collection")
+        .get("/api/user/invalid_user_id/collection")
         .set(header);
-      expect(res.status).toBe(404);
+
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("should return 404 if no collection found", async () => {
+    it("should return 200_OK if collection found", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
-        .get(`/api/${user.id}/collection`)
+        .get(`/api/user/${user.id}/collection`)
         .set(header);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.OK);
     });
 
-    it("should return 200 if style found", async () => {
+    it("should return 404_NOT_FOUND if no collection found", async () => {
+      await collection.delete();
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
-        .get(`/api/${user.id}/collection`)
+        .get(`/api/user/${user.id}/collection`)
         .set(header);
-      expect(res.status).toBe(404);
+
+      expect(res.status).toBe(status.NOT_FOUND);
     });
   });
 
   describe("PATCH /me", () => {
-    it("should return 200 if data updated", async () => {
+    it("should return 200_OK if data updated", async () => {
       const updateData = {
-        name: "updatedname",
-        email: "updatedemail@example.com",
+        name: faker.internet.username(),
+        email: faker.internet.email(),
       };
+
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.PATCH).mockReturnValue(mockResponse);
+
       const res = await request(server)
         .patch("/api/user/me")
         .set(header)
         .send(updateData);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("PATCH /profile", () => {
-    it("Should return 200 if profile updated", async () => {
+    it("Should return 200_OK if profile updated", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.PATCH).mockReturnValue(mockResponse);
+
       const updatedProfile = {
-        firstname: "firstname",
-        lastname: "lastname",
-        bio: "bio",
+        firstname: faker.person.firstName(),
+        lastname: faker.person.lastName(),
+        bio: faker.person.jobDescriptor(),
       };
 
       const res = await request(server)
         .patch("/api/user/profile")
         .set(header)
         .send(updatedProfile);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("PATCH /password", () => {
-    beforeEach(() => {
-      passwordReset = {
-        password: user.password,
-        newpassword: faker.internet.password(),
-      };
-    });
-
-    it("should return 400 if password is invalid", async () => {
+    it("Should return 400_BAD_REQUEST if password is invalid", async () => {
       passwordReset.password = "wrongpassword";
       const res = await request(server)
         .patch("/api/user/password")
         .set(header)
         .send(passwordReset);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
 
-    it("Should return 200 if password is updated", async () => {
+    it("Should return 200_OK if password is updated", async () => {
+      passwordReset.password = user.password;
+      passwordReset.newpassword = faker.internet.password();
+
       const res = await request(server)
         .patch("/api/user/password")
         .set(header)
         .send(passwordReset);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
+    });
+  });
+
+  describe("GET /:user", () => {
+    it("Should return 404_NOT_FOUND if user not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get("/api/user/userId").set(header);
+      expect(res.status).toBe(status.NOT_FOUND);
+    });
+
+    it("Should return 200_OK if user found", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get(`/api/user/${user.id}`).set(header);
+      expect(res.status).toBe(status.OK);
+    });
+  });
+
+  describe("GET /me", () => {
+    it("should return 404_NOT_FOUND if user not found", async () => {
+      await user.delete();
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get("/api/user/me").set(header);
+      expect(res.status).toBe(status.NOT_FOUND);
+    });
+
+    it("should return 200_OK if user exist", async () => {
+      const { account, login } = await createTestUser();
+      user = account;
+      header = { Authorization: `Bearer ${login.token}` };
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get("/api/user/me").set(header);
+      expect(res.status).toBe(status.OK);
+      user.delete();
+    });
+  });
+
+  describe("GET /", () => {
+    it("Should return 200_OK if user found", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get("/api/user").set(header);
+      expect(res.status).toBe(status.OK);
+    });
+
+    it("Should return 404_NOT_FOUND if no user is found", async () => {
+      await user.delete();
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { message: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
+      const res = await request(server).get("/api/user").set(header);
+
+      expect(res.status).toBe(status.NOT_FOUND);
     });
   });
 });

@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../functions/prisma");
 
 class Brand {
   constructor(brand = {}) {
@@ -8,7 +6,7 @@ class Brand {
     this.name = brand.name || null;
     this.description = brand.description || null;
     this.tags = brand.tags || [];
-    this.brandId = brand.brandId || null;
+    this.logo = brand.logo || null;
     this.owner = brand.owner || null;
     this.selectedFields = {
       id: true,
@@ -24,75 +22,78 @@ class Brand {
   }
 
   async save(brand = {}) {
-    let brnd;
+    this.name = brand.name || this.name;
+    this.description = brand.description || this.description;
+    this.tags = brand.tags || this.tags;
+    this.owner = brand.owner || this.owner;
+    this.logo = brand.logo || this.logo;
+    this.id = brand.id || this.id;
+
+    brand = await this.find({ id: this.id, name: this.name });
+
+    return brand ? this.update() : this.create();
+  }
+
+  async create(brand = {}) {
     const name = brand.name || this.name;
     const description = brand.description || this.description;
     const tags = brand.tags || this.tags;
     const owner = brand.owner || this.owner;
     const logo = brand.logo || this.logo;
-    const brandId = brand.brandId || this.brandId;
 
-    const brandData = {
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(brandId && { brandId }),
-      ...(owner && { owner }),
-      ...(logo && { logo }),
-      ...(tags && { tags }),
-    };
-
-    brand = await this.find({ name, id: this.id });
-
-    if (brand) {
-      brnd = await prisma.brand.update({
-        where: { id: brand.id },
-        data: {
-          ...brandData,
-          ...(tags &&
-            tags.length > 0 && {
+    brand = await prisma.brand.create({
+      data: {
+        name,
+        description,
+        ...(logo ? { logo: { connect: { id: logo } } } : {}),
+        ...(tags && tags.length > 0
+          ? {
               tags: {
                 connectOrCreate: tags.map((tag) => ({
                   where: { name: tag },
                   create: { name: tag },
                 })),
               },
-            }),
-          owner: { connect: { id: owner } },
-        },
-        select: this.selectedFields,
-      });
-    } else {
-      brnd = await prisma.brand.create({
-        data: {
-          name,
-          description: description.trim() || undefined,
-          ...(logo && {
-            logo: {
-              connect: {
-                id: logo,
-              },
-            },
-          }),
-          owner: {
-            connect: {
-              id: owner,
-            },
-          },
-          ...(tags &&
-            tags.length > 0 && {
+            }
+          : {}),
+        ...(owner ? { owner: { connect: { id: owner } } } : {}),
+      },
+    });
+
+    this.id = brand.id;
+    return brand;
+  }
+
+  update(brand = {}) {
+    const name = brand.name || this.name;
+    const description = brand.description || this.description;
+    const tags = brand.tags || this.tags;
+    const owner = brand.owner || this.owner;
+    const logo = brand.logo || this.logo;
+    const id = brand.id || this.id;
+
+    return prisma.brand.update({
+      where: {
+        id,
+        ownerId: owner,
+      },
+      data: {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+        ...(Array.isArray(tags) && tags.length
+          ? {
               tags: {
                 connectOrCreate: tags.map((tag) => ({
                   where: { name: tag },
                   create: { name: tag },
                 })),
               },
-            }),
-        },
-        select: this.selectedFields,
-      });
-      this.id = brnd.id;
-    }
-    return brnd;
+            }
+          : {}),
+        ...(logo ? { logo: { connect: { id: logo } } } : {}),
+        ...(owner ? { owner: { connect: { id: owner } } } : {}),
+      },
+    });
   }
 
   find(brand = {}) {

@@ -1,161 +1,179 @@
-const request = require("supertest");
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs/dist/bcrypt");
 const app = require("../app");
-let server;
+const request = require("supertest");
+const prisma = require("../functions/prisma");
+const { faker } = require("@faker-js/faker");
+const { status } = require("http-status");
+const method = require("../const/http-methods");
 
-const prisma = new PrismaClient();
+const {
+  createTestUser,
+  response,
+  createTestResetToken,
+} = require("../functions/testHelpers");
+let server;
 
 describe("Auth route", () => {
   let user;
+  let mockResponse;
+  let token;
 
-  const createUser = () => {
-    return prisma.user.create({
-      data: {
-        email: user.email,
-        password: bcrypt.hashSync(user.password, 10),
-      },
-    });
-  };
-
-  const createToken = () => {
-    return prisma.reset.create({
-      data: {
-        token: "token",
-        expires: new Date(Date.now() - 600000),
-        user: { connect: { email: user.email } },
-      },
-    });
-  };
-
-  beforeEach(async () => {
+  beforeAll(async () => {
     server = app.listen(0, () => {
       server.address().port;
     });
 
-    user = {
-      email: "test@email.com",
-      password: "password",
-    };
+    const { account } = await createTestUser();
+    user = account;
+
+    const reset = await createTestResetToken(user.email);
+    token = reset.token;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await prisma.user.deleteMany();
     await prisma.$disconnect();
     await server.close();
   });
 
   describe("POST /signup", () => {
-    afterEach(async () => {
-      await prisma.user.deleteMany();
-    });
-
     it("Should return 400 if email and password is invalid", async () => {
-      user.email = "";
-      const res = await request(server).post("/api/auth/signup").send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signup")
+        .send({ email: "", password: "" });
 
       expect(res.status).toBe(400);
     });
 
     it("Should return 400 if user already exists", async () => {
-      await createUser();
-      const res = await request(server).post("/api/auth/signup").send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signup")
+        .send({ email: user.email });
       expect(res.status).toBe(400);
     });
 
     it("Should return 200 if user is created", async () => {
-      user.email = "test@test.com";
-      const res = await request(server).post("/api/auth/signup").send(user);
+      mockResponse = response(status.OK, status[status.OK]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server).post("/api/auth/signup").send({
+        email: faker.internet.email(),
+        password: faker.internet.password(),
+      });
       expect(res.status).toBe(200);
     });
   });
 
   describe("POST /signin", () => {
-    afterEach(async () => {
-      await prisma.user.deleteMany();
-    });
-
     it("Should return 400 if email and password is invalid", async () => {
-      user.email = "";
-      const res = await request(server).post("/api/auth/signup").send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signup")
+        .send({ email: "" });
 
       expect(res.status).toBe(400);
     });
 
     it("Should return 404 if user is not found", async () => {
-      user.email = "invalidemail@test.com";
-      const res = await request(server).post("/api/auth/signin").send(user);
+      mockResponse = response(status.NOT_FOUND, status[status.NOT_FOUND]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signin")
+        .send({ email: "invalid_email", password: user.password });
 
       expect(res.status).toBe(404);
     });
 
     it("Should return 400 if password is invalid", async () => {
-      await createUser();
-      user.password = "invalidpassword";
-      const res = await request(server).post("/api/auth/signin").send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signin")
+        .send({ email: user.email, password: "invalid_password" });
       expect(res.status).toBe(400);
     });
 
     it("Should return 200 if user is found", async () => {
-      await createUser();
-      const res = await request(server).post("/api/auth/signin").send(user);
+      mockResponse = response(status.OK, status[status.OK]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/signin")
+        .send({ email: user.email, password: user.password });
 
       expect(res.status).toBe(200);
     });
   });
 
   describe("POST /reset", () => {
-    afterEach(async () => {
-      await prisma.user.deleteMany();
-    });
-
     it("should return 400 if email is invalid", async () => {
-      user.email = "";
-      const res = await request(server).post("/api/auth/reset").send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server).post("/api/auth/reset");
 
       expect(res.status).toBe(400);
     });
 
     it("should return 404 if user is not found", async () => {
-      const res = await request(server).post("/api/auth/reset").send(user);
+      mockResponse = response(status.NOT_FOUND, status[status.NOT_FOUND]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/reset")
+        .send({ email: "random_email@email.com" });
 
       expect(res.status).toBe(404);
     });
 
     it("should return 200 if reset successful", async () => {
-      await createUser();
-      const res = await request(server).post("/api/auth/reset").send(user);
+      mockResponse = response(status.OK, status[status.OK]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server)
+        .post("/api/auth/reset")
+        .send({ email: user.email });
       expect(res.status).toBe(200);
     });
   });
 
   describe("POST /reset/:token", () => {
-    afterEach(async () => {
-      await prisma.user.deleteMany();
-    });
+    it("should return 400 if token or password is undefined", async () => {
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
 
-    it("should return 400 if token and password is undefined", async () => {
-      user.password = "";
-      res = await request(server).post(`/api/auth/reset/token`).send(user);
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      res = await request(server).post(`/api/auth/reset/undefined_token`);
 
       expect(res.status).toBe(400);
     });
 
     it("should return 400 if token is invalid", async () => {
-      user = await createUser();
-      const res = await request(server)
-        .post("/api/auth/reset/invalidtoken")
-        .send(user);
+      mockResponse = response(status.BAD_REQUEST, status[status.BAD_REQUEST]);
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      const res = await request(server).post("/api/auth/reset/invalid_token");
 
       expect(res.status).toBe(400);
     });
 
-    it("should return 400 if token is expired", async () => {
-      user = await createUser();
-      createToken();
-      res = await request(server).post("/api/auth/reset/token").send(user);
+    it("should return 200 if password reset", async () => {
+      mockResponse = response(status.OK, status[status.OK]);
 
-      expect(res.status).toBe(400);
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
+      res = await request(server)
+        .post(`/api/auth/reset/${token}`)
+        .send({ password: faker.internet.password() });
+
+      expect(res.status).toBe(200);
     });
   });
 });

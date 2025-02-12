@@ -22,24 +22,18 @@ class Logger {
       );
 
     this.logger = winston.createLogger({
-      level: "info",
+      level: "debug",
       format,
       transports,
-    });
-
-    this.initializeLogging();
-  }
-
-  initializeLogging() {
-    winston.exceptions.handle(
-      new winston.transports.File({
-        filename: "logs/error.log",
-      })
-    );
-
-    process.on("unhandledRejection", (ex) => {
-      this.logger.error(ex.message, ex);
-      process.exit(1);
+      exceptionHandlers: [
+        new winston.transports.File({
+          filename: "logs/exceptions.log",
+        }),
+        new winston.transports.Console({
+          format: winston.format.combine(winston.format.colorize()),
+        }),
+      ],
+      exitOnError: false,
     });
   }
 

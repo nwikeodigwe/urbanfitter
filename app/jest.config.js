@@ -1,4 +1,8 @@
 module.exports = {
+  cache: true,
+  clearMocks: true,
+  resetModules: true,
+  restoreMocks: true,
   preset: "ts-jest",
   testEnvironment: "node",
   transform: {

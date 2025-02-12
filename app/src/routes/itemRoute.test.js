@@ -1,383 +1,430 @@
-const request = require("supertest");
-const { PrismaClient } = require("@prisma/client");
 const app = require("../app");
+const request = require("supertest");
+const { faker } = require("@faker-js/faker");
+const { status } = require("http-status");
+const prisma = require("../functions/prisma");
+const method = require("../const/http-methods");
+const {
+  createTestUser,
+  createTestBrand,
+  createTestImage,
+  createTestItem,
+} = require("../functions/testHelpers");
 let server;
-
-const prisma = new PrismaClient();
 
 describe("Item route", () => {
   let user;
-  let item;
-  let token;
   let header;
   let image;
+  let item;
+  let brand;
+  let newItem = {};
 
-  const auth = async () => {
-    const res = await request(server).post("/api/auth/signup").send(user);
-    return res.body.login.token;
-  };
-
-  const createItem = async () => {
-    return prisma.item.create({
-      data: {
-        name: item.name,
-        description: item.description,
-        tags: {
-          connectOrCreate: item.tags.map((tag) => ({
-            where: { name: tag },
-            create: { name: tag },
-          })),
-        },
-        images: {
-          connect: item.images.map((image) => ({
-            id: image,
-          })),
-        },
-        brand: {
-          connectOrCreate: {
-            where: { name: item.brand },
-            create: { name: item.brand },
-          },
-        },
-        creator: { connect: { email: user.email } },
-      },
-      select: {
-        id: true,
-      },
-    });
-  };
-
-  const favoriteItem = async (itemId) => {
-    user = await prisma.user.findFirst({
-      where: {
-        email: user.email,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    await prisma.favoriteItem.upsert({
-      where: {
-        userId_itemId: {
-          userId: user.id,
-          itemId: itemId,
-        },
-      },
-      create: {
-        user: {
-          connect: {
-            id: user.id,
-          },
-        },
-        item: {
-          connect: {
-            id: itemId,
-          },
-        },
-      },
-      update: {},
-    });
-  };
-
-  const upvote = async (itemId) => {
-    user = await prisma.user.findFirst({
-      where: {
-        email: user.email,
-      },
-      select: {
-        id: true,
-      },
-    });
-    return prisma.itemVote.upsert({
-      where: {
-        userId_itemId: {
-          userId: user.id,
-          itemId: itemId,
-        },
-      },
-      create: {
-        user: {
-          connect: { id: user.id },
-        },
-        item: { connect: { id: itemId } },
-      },
-      update: {},
-    });
-  };
-
-  const createImage = () => {
-    return prisma.image.create({
-      data: {
-        url: "http://image.com/image.png",
-      },
-      select: {
-        id: true,
-      },
-    });
-  };
-
-  beforeEach(async () => {
+  beforeAll(async () => {
     server = app.listen(0, () => {
       server.address().port;
     });
 
-    user = {
-      email: "test@test.com",
-      password: "password",
-    };
+    const { account, login } = await createTestUser();
+    user = account;
+    header = { Authorization: `Bearer ${login.token}` };
 
-    image = await createImage();
-
-    item = {
-      name: "name",
-      description: "description",
-      tags: ["tag1"],
-      images: [image.id],
-      brand: "brand",
-    };
-
-    token = await auth();
-    header = { authorization: `Bearer ${token}` };
+    image = await createTestImage();
+    brand = await createTestBrand(user.id);
+    item = await createTestItem(brand.name, user.id, image.id);
   });
 
-  afterEach(async () => {
-    await prisma.user.deleteMany();
-    await prisma.item.deleteMany();
+  afterAll(async () => {
+    await prisma.$transaction([
+      prisma.user.deleteMany(),
+      prisma.item.deleteMany(),
+    ]);
     await prisma.$disconnect();
     await server.close();
   });
 
   describe("POST /", () => {
-    it("Should return 400 if name and description not provided", async () => {
+    it("Should return 400_BAD_REQUEST if name and description not provided", async () => {
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { error: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server).post("/api/item").set(header);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
 
-    it("Should return 400 if image not provided", async () => {
-      item.images = undefined;
+    it("Should return 400_BAD_REQUEST if image not provided", async () => {
+      newItem.name = faker.commerce.productName();
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { error: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post("/api/item")
         .set(header)
-        .send(item);
+        .send(newItem);
+      newItem = {};
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
 
-    it("Should return 400 if tag is not an array", async () => {
-      item.tags = "tag";
+    it("Should return 400_BAD_REQUEST if tag is not an array", async () => {
+      newItem.tags = "tag";
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { error: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post("/api/item")
         .set(header)
-        .send(item);
+        .send(newItem);
+      newItem = {};
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
 
-    it("Should return 400 if brand not provided", async () => {
-      item.brand = null;
+    it("Should return 400_BAD_REQUEST if brand not provided", async () => {
+      newItem.brand = null;
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { error: status[status.BAD_REQUEST] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post("/api/item")
         .set(header)
-        .send(item);
+        .send(newItem);
+      newItem = {};
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
 
-    it("Should return 201 if item created", async () => {
+    it("Should return 201_CREATED if item created", async () => {
+      let newItem = {};
+      newItem.name = faker.commerce.productName();
+      newItem.description = faker.commerce.productDescription();
+      newItem.images = [image.id, image.id];
+      newItem.tags = ["tag1", "tag1"];
+      newItem.brand = faker.commerce.productName();
+
+      const mockResponse = {
+        status: status.CREATED,
+        body: { message: status[status.CREATED] },
+      };
+
+      jest.spyOn(request(server), method.POST).mockImplementation(() => {
+        return Promise.resolve(mockResponse);
+      });
       const res = await request(server)
         .post("/api/item")
         .set(header)
-        .send(item);
+        .send(newItem);
+      newItem = {};
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(status.CREATED);
     });
   });
 
   describe("GET /", () => {
-    it("Should return 404 if no item found", async () => {
+    it("Should return 404_NOT_FOUND if no item found", async () => {
+      await prisma.item.deleteMany();
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server).get("/api/item").set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 item found", async () => {
-      await createItem();
+    it("Should return 200_OK item found", async () => {
+      item = await createTestItem(brand.name, user.id, image.id);
+      const mockResponse = {
+        status: status.OK,
+        body: { message: status[status.OK], data: {} },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server).get(`/api/item`).set(header);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("GET /:item", () => {
-    it("Should return 404 if no item found", async () => {
+    it("Should return 404_NOT_FOUND if no item found", async () => {
       const res = await request(server).get("/api/item/ItemId").set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 item found", async () => {
-      const item = await createItem();
+    it("Should return 200_OK item found", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { error: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server).get(`/api/item/${item.id}`).set(header);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("GET /:item", () => {
-    it("Should return 404 if no item found", async () => {
+    it("Should return 404_NOT_FOUND if no item found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server).get("/api/item/ItemId").set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 item found", async () => {
-      const item = await createItem();
+    it("Should return 200_OK item found", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { error: status[status.OK] },
+      };
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server).get(`/api/item/${item.id}`).set(header);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("POST /favorite", () => {
-    it("Should return 404 if no item found", async () => {
+    it("Should return 404_NOT_FOUND if no item found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post("/api/item/ItemId/favorite")
         .set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 item found", async () => {
-      item = await createItem();
+    it("Should return 201_CREATED if item created", async () => {
+      const mockResponse = {
+        status: status.CREATED,
+        body: { error: status[status.CREATED] },
+      };
+      jest.spyOn(request(server), method.POST).mockReturnValue(mockResponse);
       const res = await request(server)
         .post(`/api/item/${item.id}/favorite`)
         .set(header);
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(status.CREATED);
     });
   });
 
   describe("DELETE /unfavorite", () => {
-    it("Should return 404 if no item found", async () => {
+    it("Should return 404_NOT_FOUND if no item found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete("/api/item/ItemId/unfavorite")
         .set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 400 if item not favorited", async () => {
-      item = await createItem();
+    it("Should return 204_NO_CONTENT if item unfavorited", async () => {
+      await item.favorite(user.id);
+      const mockResponse = {
+        status: status.CREATED,
+        body: { error: status[status.CREATED] },
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete(`/api/item/${item.id}/unfavorite`)
         .set(header);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(status.NO_CONTENT);
     });
 
-    it("Should return 204 if item unfavorited", async () => {
-      item = await createItem();
-      await favoriteItem(item.id);
+    it("Should return 400_BAD_REQUEST if item not favorited", async () => {
+      const mockResponse = {
+        status: status.BAD_REQUEST,
+        body: { error: status[status.BAD_REQUEST] },
+      };
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete(`/api/item/${item.id}/unfavorite`)
         .set(header);
 
-      expect(res.status).toBe(204);
+      expect(res.status).toBe(status.BAD_REQUEST);
     });
   });
 
   describe("PUT /:item/upvote", () => {
-    it("Should return 404 if brand is not found", async () => {
+    it("Should return 404_NOT_FOUND if brand is not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.PUT).mockReturnValue(mockResponse);
       const res = await request(server)
         .put("/api/item/itemId/upvote")
         .set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 if item upvoted", async () => {
-      item = await createItem();
+    it("Should return 200_OK if item upvoted", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { success: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.PUT).mockReturnValue(mockResponse);
+
       const res = await request(server)
         .put(`/api/item/${item.id}/upvote`)
         .set(header);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("PUT /:item/downvote", () => {
-    it("Should return 404 if item is not found", async () => {
+    it("Should return 404_NOT_FOUND if item is not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
         .put("/api/item/itemId/downvote")
         .set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 if brand downvoted", async () => {
-      item = await createItem();
+    it("Should return 200_OK if brand downvoted", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { success: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
         .put(`/api/item/${item.id}/downvote`)
         .set(header);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("DELETE /:item/unvote", () => {
-    it("Should return 404 if item not found", async () => {
+    it("Should return 404_NOT_FOUND if item not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete("/api/item/itemId/unvote")
         .set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 204 if item unvoted", async () => {
-      item = await createItem();
-      await upvote(item.id);
+    it("Should return 204_NO_CONTENT if item unvoted", async () => {
+      await item.upvote(user.id);
+      const mockResponse = {
+        status: status.NO_CONTENT,
+        message: status[status.NO_CONTENT],
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server)
         .delete(`/api/item/${item.id}/unvote`)
         .set(header);
 
-      expect(res.status).toBe(204);
+      expect(res.status).toBe(status.NO_CONTENT);
     });
   });
 
   describe("PATCH /:item/", () => {
-    it("Should return 404 if item not found", async () => {
+    it("Should return 404_NOT_FOUND if item not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.PATCH).mockReturnValue(mockResponse);
       const res = await request(server).patch("/api/item/itemId").set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 200 if item updated", async () => {
-      item = await createItem();
+    it("Should return 200_OK if item updated", async () => {
+      const mockResponse = {
+        status: status.OK,
+        body: { error: status[status.OK] },
+      };
+
+      jest.spyOn(request(server), method.GET).mockReturnValue(mockResponse);
       const res = await request(server)
         .patch(`/api/item/${item.id}`)
         .set(header)
         .send({ name: "name++" });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(status.OK);
     });
   });
 
   describe("DELETE /:item", () => {
-    it("Should return 404 if item not found", async () => {
+    it("Should return 404_NOT_FOUND if item not found", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest.spyOn(request(server), method.DELETE).mockReturnValue(mockResponse);
       const res = await request(server).delete("/api/item/itemId").set(header);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(status.NOT_FOUND);
     });
 
-    it("Should return 204 if item deleted", async () => {
-      item = await createItem();
+    it("Should return 204_NO_CONTENT if item deleted", async () => {
+      const mockResponse = {
+        status: status.NOT_FOUND,
+        body: { error: status[status.NOT_FOUND] },
+      };
+
+      jest
+        .spyOn(request(server), method.DELETE)
+        .mockReturnValue({ mockResponse });
       const res = await request(server)
         .delete(`/api/item/${item.id}`)
         .set(header);
 
-      expect(res.status).toBe(204);
+      expect(res.status).toBe(status.NO_CONTENT);
     });
   });
 });

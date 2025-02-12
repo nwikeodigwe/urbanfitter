@@ -12,9 +12,9 @@ router.get("/", async (req, res) => {
   if (!users.length)
     return res
       .status(status.NOT_FOUND)
-      .json({ error: status[status.NOT_FOUND] });
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ users });
+  return res.status(status.OK).json({ users });
 });
 
 router.post("/:user/subscribe", async (req, res) => {
@@ -22,17 +22,24 @@ router.post("/:user/subscribe", async (req, res) => {
   user.id = req.params.user;
   let userExists = await user.findById();
 
-  if (!userExists) return res.status(404).json({ message: "User not found" });
+  if (!userExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   user.id = req.user.id;
   let isSubscribed = await user.isSubscribedTo(req.params.user);
 
   if (isSubscribed)
-    return res.status(400).json({ message: "Already subscribed" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   let subscription = await user.subscribeTo(req.params.user);
 
-  res.status(201).json({ subscription });
+  res
+    .status(status.CREATED)
+    .json({ message: status[status.CREATED], data: subscription });
 });
 
 router.delete("/:user/unsubscribe", async (req, res) => {
@@ -40,16 +47,22 @@ router.delete("/:user/unsubscribe", async (req, res) => {
   user.id = req.params.user;
   let userExists = await user.findById();
 
-  if (!userExists) return res.status(404).json({ message: "User not found" });
+  if (!userExists)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   user.id = req.user.id;
   let isSubscribed = await user.isSubscribedTo(req.params.user);
 
-  if (!isSubscribed) return res.status(400).json({ message: "Not subscribed" });
+  if (!isSubscribed)
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   await user.unsubscribeFrom(req.params.user);
 
-  res.status(200).end();
+  return res.status(status.NO_CONTENT).end();
 });
 
 router.get("/me", async (req, res) => {
@@ -57,40 +70,58 @@ router.get("/me", async (req, res) => {
   user.id = req.user.id;
   user = await user.find();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ user });
+  return res.status(status.OK).json({ message: status[status.OK], data: {} });
 });
 
 router.get("/:user/style", async (req, res) => {
   let user = new User();
   user.id = req.params.user;
-  user = await user.findById();
+  user = await user.find();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
   let style = new Style();
-  style = await style.findMany({ userId: user.id });
+  style = await style.findMany({ authorId: user.id });
 
-  if (!style.length) return res.status(404).json({ message: "No style found" });
+  if (!style.length)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  return res.status(200).json({ style });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.OK], data: style });
 });
 
 router.get("/:user/collection", async (req, res) => {
   let user = new User();
-  user.id = req.user.id;
-  user = await user.findById();
+  user.id = req.params.user;
+  user = await user.find();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND] });
 
   let collection = new Collection();
-  collection = await collection.findMany({ userId: user.id });
+  collection = await collection.findMany({ authorId: user.id });
 
   if (!collection.length)
-    return res.status(404).json({ message: "No collection found" });
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  return res.status(200).json({ collection });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.OK], data: collection });
 });
 
 router.patch("/me", async (req, res) => {
@@ -101,7 +132,7 @@ router.patch("/me", async (req, res) => {
 
   user = await user.save();
 
-  res.status(200).json({ user });
+  return res.status(status.OK).json({ message: status[status.OK], data: user });
 });
 
 router.patch("/profile", async (req, res) => {
@@ -116,7 +147,9 @@ router.patch("/profile", async (req, res) => {
 
   const profile = await user.updateProfile(data);
 
-  return res.status(200).json({ profile });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.OK], data: profile });
 });
 
 router.patch("/password", async (req, res) => {
@@ -125,12 +158,15 @@ router.patch("/password", async (req, res) => {
 
   let password = await user.passwordMatch(req.body.password);
 
-  if (!password) return res.status(400).json({ message: "Invalid password" });
+  if (!password)
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   user.password = req.body.newpassword;
   await user.save();
 
-  res.status(200).end();
+  return res.status(status.OK).json({ message: status[status.OK], data: {} });
 });
 
 router.get("/:user", async (req, res) => {
@@ -138,28 +174,34 @@ router.get("/:user", async (req, res) => {
   user.id = req.params.user;
   user = await user.findById();
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user)
+    return res
+      .status(status.NOT_FOUND)
+      .json({ message: status[status.NOT_FOUND], data: {} });
 
-  res.status(200).json({ user });
+  return res.status(status.OK).json({ message: status[status.OK], data: user });
 });
 
 router.post("/refresh/token", async (req, res) => {
   if (!req.body.token)
     return res
-      .status(400)
-      .json({ message: "Please provide a valid refresh token" });
-
-  let user = new User();
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
   const isValidToken = await user.verifyToken(req.body.token);
 
   if (!isValidToken)
-    return res.status(400).json({ message: "Invalid refresh token" });
+    return res
+      .status(status.BAD_REQUEST)
+      .json({ message: status[status.BAD_REQUEST], data: {} });
 
+  let user = new User();
   user.id = req.user.id;
-  const token = await user.generateAccessToken;
+  const token = await user.generateAccessToken();
 
-  res.status(200).json({ token });
+  return res
+    .status(status.OK)
+    .json({ message: status[status.OK], data: token });
 });
 
 module.exports = router;
