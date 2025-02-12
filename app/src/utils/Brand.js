@@ -46,7 +46,7 @@ class Brand {
         name,
         description,
         ...(logo ? { logo: { connect: { id: logo } } } : {}),
-        ...(tags && tags.length > 0
+        ...(tags
           ? {
               tags: {
                 connectOrCreate: tags.map((tag) => ({

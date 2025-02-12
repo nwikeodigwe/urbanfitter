@@ -25,28 +25,75 @@ class Style {
   }
 
   async save(style = {}) {
+    this.id = style.id || this.id;
+    this.name = style.name || this.name;
+    this.description = style.description || this.description;
+    this.tags = style.tags || this.tags;
+    this.author = style.author || this.author;
+    this.collection = style.collection || this.collection;
+
+    style = await this.find();
+
+    return style ? this.update() : this.create();
+  }
+
+  async create(style = {}) {
     const name = style.name || this.name;
     const description = style.description || this.description;
     const tags = style.tags || this.tags;
     const author = style.author || this.author;
     const collection = style.collection || this.collection;
-    let stle;
 
-    let styleData = {
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(author && { author }),
-      ...(tags && { tags }),
-    };
+    style = await prisma.style.create({
+      data: {
+        name,
+        description,
+        ...(tags.length > 0
+          ? {
+              tags: {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              },
+            }
+          : {}),
+        ...(collection
+          ? {
+              collection: {
+                connect: {
+                  id: collection,
+                },
+              },
+            }
+          : {}),
+        author: {
+          connect: {
+            id: author,
+          },
+        },
+      },
+      select: this.selectedFields,
+    });
 
-    if (this.id) {
-      stle = await prisma.style.update({
-        where: { id: this.id },
-        data: {
-          ...(name && { name }),
-          ...(description && { description }),
-          ...(tags &&
-            tags.length > 0 && {
+    this.id = style.id;
+    return style;
+  }
+
+  update(style = {}) {
+    const id = style.id || this.id;
+    const name = style.name || this.name;
+    const description = style.description || this.description;
+    const tags = style.tags || this.tags;
+    const collection = style.collection || this.collection;
+
+    return prisma.style.update({
+      where: { id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+        ...(tags.length > 0
+          ? {
               tags: {
                 deleteMany: {},
                 connectOrCreate: tags.map((tag) => ({
@@ -54,41 +101,12 @@ class Style {
                   create: { name: tag },
                 })),
               },
-            }),
-        },
-        select: this.selectedFields,
-      });
-    } else {
-      stle = await prisma.style.create({
-        data: {
-          ...styleData,
-          ...(tags &&
-            tags.length > 0 && {
-              tags: {
-                connectOrCreate: tags.map((tag) => ({
-                  where: { name: tag },
-                  create: { name: tag },
-                })),
-              },
-            }),
-          ...(collection && {
-            collection: {
-              connect: {
-                id: collection,
-              },
-            },
-          }),
-          author: {
-            connect: {
-              id: author,
-            },
-          },
-        },
-        select: this.selectedFields,
-      });
-    }
-    this.id = stle.id;
-    return stle;
+            }
+          : {}),
+        ...(collection ? { collection: { connect: { id: collection } } } : {}),
+      },
+      select: this.selectedFields,
+    });
   }
 
   find(style = {}) {

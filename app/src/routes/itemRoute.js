@@ -2,6 +2,7 @@ const express = require("express");
 const Item = require("../utils/Item");
 const User = require("../utils/User");
 const { status } = require("http-status");
+const transform = require("../functions/transform");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
@@ -20,25 +21,10 @@ router.post("/", async (req, res) => {
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
 
-  let itemData = { ...req.body };
-
-  if (req.body.tags && req.body.tags.length > 0)
-    itemData.tags = req.body.tags.map((tag) =>
-      tag
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9]/g, "")
-    );
-
   if (!req.body.brand)
     return res
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
-
-  itemData.brand = req.body.brand
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9]/g, "");
 
   if (req.body.creator) {
     let creator = new User();
@@ -49,13 +35,18 @@ router.post("/", async (req, res) => {
         .status(status.NOT_FOUND)
         .json({ message: status[status.NOT_FOUND], data: {} });
 
-    itemData.creator = creator.id;
+    item.creator = creator.id;
   }
 
   let item = new Item();
-  item = await item.save(itemData);
+  item.images = req.body.images;
+  item.name = req.body.name;
+  item.description = req.body.description;
+  item.tags = req.body.tags.map((tag) => transform(tag)) || undefined;
+  item.brand = transform(req.body.brand);
+  item = await item.save();
 
-  res
+  return res
     .status(status.CREATED)
     .json({ message: status[status.CREATED], data: item });
 });

@@ -23,19 +23,17 @@ router.post("/", async (req, res) => {
       .status(status.NOT_FOUND)
       .json({ message: status[status.NOT_FOUND], data: {} });
 
-  if (!!req.body.tags && !Array.isArray(req.body.tags))
+  if (req.body.tags && !Array.isArray(req.body.tags))
     return res
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
 
-  let styleData = { ...req.body };
-  styleData.author = req.user.id;
-
-  if (req.body.tags && req.body.tags.length > 0)
-    styleData.tags = req.body.tags.map((tag) => transform(tag));
-
   let style = new Style();
-  style = await style.save(styleData);
+  style.tags = req.body.tags.map((tag) => transform(tag)) || undefined;
+  style.name = req.body.name;
+  style.description = req.body.description;
+  style.author = req.user.id;
+  style = await style.save();
 
   return res
     .status(status.CREATED)
@@ -103,16 +101,13 @@ router.post("/:style/comment", async (req, res) => {
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
 
-  let commentData = { ...req.body };
-  commentData.entity = ENTITY;
-  commentData.entityId = req.params.style;
-  commentData.userId = req.user.id;
-
-  if (req.body.tags && req.body.tags.length > 0)
-    commentData.tags = req.body.tags.map((tag) => transform(tag));
-
   let comment = new Comment();
-  comment = await comment.save(commentData);
+  comment.tags = req.body.tags.map((tag) => transform(tag)) || undefined;
+  comment.content = req.body.content;
+  comment.entity = ENTITY;
+  comment.entityId = req.params.style;
+  comment.userId = req.user.id;
+  comment = await comment.save();
 
   return res
     .status(status.CREATED)
@@ -139,16 +134,12 @@ router.post("/:style/comment/:comment", async (req, res) => {
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
 
-  let commentData = { ...req.body };
-  commentData.entity = ENTITY;
-  commentData.entityId = req.params.style;
-  commentData.userId = req.user.id;
-
-  if (req.body.tags && req.body.tags.length > 0)
-    commentData.tags = req.body.tags.map((tag) => transform(tag));
-
   let comment = new Comment();
+
+  comment.tags = req.body.tags.map((tag) => transform(tag)) || undefined;
+
   comment.id = req.params.comment;
+
   let commentExists = await comment.find();
 
   if (!commentExists)
@@ -156,7 +147,12 @@ router.post("/:style/comment/:comment", async (req, res) => {
       .status(status.NOT_FOUND)
       .json({ message: status[status.NOT_FOUND], data: {} });
 
-  comment = await comment.save(commentData);
+  comment.content = req.body.content;
+  comment.tags = req.body.tags;
+  comment.entity = ENTITY;
+  comment.entityId = req.params.style;
+  comment.userId = req.user.id;
+  comment = await comment.save();
 
   return res
     .status(status.CREATED)
@@ -208,11 +204,11 @@ router.patch("/:style", async (req, res) => {
       .status(status.BAD_REQUEST)
       .json({ message: status[status.BAD_REQUEST], data: {} });
 
-  let styleData = { ...req.body };
-
-  styleData.tags = req.body.tags.map((tag) => transform(tag));
-
   let style = new Style();
+  style.name = req.body.name;
+  style.description = req.body.description;
+  style.tags = req.body.tags.map((tag) => transform(tag)) || undefined;
+
   style.id = req.params.style;
   let styleExists = await style.find();
 

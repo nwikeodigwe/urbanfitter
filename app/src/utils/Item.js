@@ -21,95 +21,117 @@ class Item {
   }
 
   async save(item = {}) {
-    let itm;
+    this.name = item.name || this.name;
+    this.description = item.description || this.description;
+    this.tags = item.tags || this.tags;
+    this.id = item.id || this.id;
+    this.brand = item.brand || this.brand;
+    this.images = item.images || this.images;
+    this.creator = item.creator || this.creator;
+
+    item = await this.find();
+
+    return item ? this.update() : this.create();
+  }
+
+  async create(item = {}) {
     const name = item.name || this.name;
     const description = item.description || this.description;
     const tags = item.tags || this.tags;
-    const id = item.id || this.id;
     const brand = item.brand || this.brand;
     const images = item.images || this.images;
     const creator = item.creator || this.creator;
 
-    const itemData = {
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(tags && { tags }),
-      ...(brand && { brand }),
-      ...(images && { images }),
-      ...(creator && { creator }),
-    };
-
-    if (id) {
-      itm = await prisma.item.update({
-        where: { id },
-        data: {
-          ...(name && { name }),
-          ...(description && { description }),
-          ...(tags &&
-            tags.length > 0 && {
-              tags: {
-                connectOrCreate: tags.map((tag) => ({
-                  where: { name: tag },
-                  create: { name: tag },
-                })),
-              },
-            }),
-          ...(creator && {
-            creator: { connect: { id: creator } },
-          }),
-          ...(images && {
-            images: {
-              connect: images.map((image) => ({
-                id: image,
+    item = await prisma.item.create({
+      data: {
+        name,
+        description,
+        ...(tags &&
+          tags.length > 0 && {
+            tags: {
+              connectOrCreate: tags.map((tag) => ({
+                where: { name: tag },
+                create: { name: tag },
               })),
             },
           }),
-          ...(brand && {
-            brand: {
-              connectOrCreate: {
-                where: { name: brand },
-                create: { name: brand },
-              },
-            },
-          }),
-        },
-        select: this.selectedFields,
-      });
-    } else {
-      itm = await prisma.item.create({
-        data: {
-          ...itemData,
-          ...(tags &&
-            tags.length > 0 && {
-              tags: {
-                connectOrCreate: tags.map((tag) => ({
-                  where: { name: tag },
-                  create: { name: tag },
-                })),
-              },
-            }),
-          // ...(creator && {
-          //   creator: { connect: { id: creator } },
-          // }),
-          ...(images && {
-            images: {
-              connect: images.map((image) => ({
-                id: image,
-              })),
-            },
-          }),
-          brand: {
-            connectOrCreate: {
-              where: { name: brand },
-              create: { name: brand },
-            },
+        ...(creator
+          ? {
+              creator: { connect: { id: creator } },
+            }
+          : {}),
+        ...(images && {
+          images: {
+            connect: images.map((image) => ({
+              id: image,
+            })),
+          },
+        }),
+        brand: {
+          connectOrCreate: {
+            where: { name: brand },
+            create: { name: brand },
           },
         },
-        select: this.selectedFields,
-      });
-      this.id = itm.id;
-    }
-    return itm;
+      },
+      select: this.selectedFields,
+    });
+
+    this.id = item.id;
+    return item;
+  }
+
+  update(item = {}) {
+    const id = item.id || this.id;
+    const name = item.name || this.name;
+    const description = item.description || this.description;
+    const tags = item.tags || this.tags;
+    const brand = item.brand || this.brand;
+    const images = item.images || this.images;
+    const creator = item.creator || this.creator;
+
+    return prisma.item.update({
+      where: { id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+        ...(tags && tags.length > 0
+          ? {
+              tags: {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              },
+            }
+          : {}),
+        ...(creator
+          ? {
+              creator: { connect: { id: creator } },
+            }
+          : {}),
+        ...(images
+          ? {
+              images: {
+                connect: images.map((image) => ({
+                  id: image,
+                })),
+              },
+            }
+          : {}),
+        ...(brand
+          ? {
+              brand: {
+                connectOrCreate: {
+                  where: { name: brand },
+                  create: { name: brand },
+                },
+              },
+            }
+          : {}),
+      },
+      select: this.selectedFields,
+    });
   }
 
   find(item = {}) {

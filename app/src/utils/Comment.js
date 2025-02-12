@@ -22,7 +22,7 @@ class Comment {
     const userId = comment.userId || this.userId;
     const entityId = comment.entityId || this.entityId;
 
-    let commnt = await prisma.comment.create({
+    comment = await prisma.comment.create({
       data: {
         content,
         ...(tags && {
@@ -47,12 +47,12 @@ class Comment {
       select: this.selectedFields,
     });
 
-    this.id = commnt.id;
-    return commnt;
+    this.id = comment.id;
+    return comment;
   }
 
   find(id = this.id) {
-    return prisma.comment.findUnique({
+    return prisma.comment.findFirst({
       where: { id },
       select: this.selectedFields,
     });
