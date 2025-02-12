@@ -18,18 +18,6 @@ jobs:
         node-version: [20, 21]
 
     services:
-      mysql:
-        image: mysql:latest
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_PASSWORD }}
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -u${MYSQL_USER} -p${MYSQL_PASSWORD}"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     env:
       CI: true
 
