@@ -10,38 +10,42 @@ class Image {
     };
   }
 
-  async save(url = this.url) {
-    let img;
-    const imageData = {
-      ...(url && { url }),
-    };
+  async save(image = {}) {
+    this.id = image.id || this.id;
+    this.url = image.url || this.url;
 
-    if (this.id) {
-      img = await prisma.image.update({
-        where: { id: this.id },
-        data: imageData,
-        select: this.selectedFields,
-      });
-    } else {
-      img = await prisma.image.create({
-        data: imageData,
-        select: this.selectedFields,
-      });
-      this.id = img.id;
-    }
-    return img;
+    return this.id ? this.update() : this.create();
+  }
+
+  async create(url = this.url) {
+    const image = await prisma.image.create({
+      data: { url },
+      select: { id: true },
+    });
+
+    this.id = image.id;
+    return image;
+  }
+
+  update(image = {}) {
+    const id = image.id || this.id;
+    const url = image.url || this.url;
+
+    return prisma.image.update({
+      where: {
+        id,
+      },
+      data: {
+        url,
+      },
+    });
   }
 
   find(image = {}) {
     const id = image.id || this.id;
-    const filters = [id && { id }].filter(Boolean);
-
-    if (filters.length === 0) {
-      throw new Error("At least one of id must be provided");
-    }
 
     return prisma.image.findFirst({
-      where: filters[0],
+      where: { id },
       select: this.selectedFields,
     });
   }

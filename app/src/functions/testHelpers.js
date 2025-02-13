@@ -37,13 +37,13 @@ const createTestCollection = async (userId) => {
   return collection;
 };
 
-const createTestStyle = async (userId, collectionId) => {
+const createTestStyle = async (user, collection) => {
   let style = new Style();
   style.name = faker.commerce.productName();
   style.description = faker.commerce.productDescription();
-  style.author = userId;
+  style.author = user;
   style.tags = ["tag1", "tag2"];
-  style.collectionId = collectionId;
+  style.collection = collection;
   await style.save();
   return style;
 };
@@ -55,7 +55,6 @@ const createTestBrand = async (ownerId, logoId) => {
   brand.tags = ["tag1", "tag2"];
   brand.logo = logoId;
   brand.owner = ownerId;
-  // jest.spyOn(brand, "save").mockResolvedValue(mockSavedBrand);
   await brand.save();
   return brand;
 };
@@ -68,7 +67,6 @@ const createTestItem = async (brandName, userId, imageId) => {
   item.images = [imageId, imageId];
   item.brand = brandName;
   item.userId = userId;
-  // jest.spyOn(item, "save").mockResolvedValue(mockSavedItem);
   await item.save();
   return item;
 };

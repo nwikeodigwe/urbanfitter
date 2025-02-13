@@ -348,7 +348,7 @@ describe("User route", () => {
     });
 
     it("Should return 404_NOT_FOUND if no user is found", async () => {
-      await user.delete();
+      await user.deleteMany();
       const mockResponse = {
         status: status.NOT_FOUND,
         body: { message: status[status.NOT_FOUND] },

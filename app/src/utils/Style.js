@@ -5,6 +5,7 @@ class Style {
     this.id = style.id;
     this.name = style.name;
     this.description = style.description;
+    this.collection = style.collection;
     this.tags = style.tags || [];
     this.author = style.author;
 
@@ -127,7 +128,7 @@ class Style {
     });
   }
 
-  findMany(where) {
+  findMany(where = {}) {
     return prisma.style.findMany({
       where,
       select: this.selectedFields,
